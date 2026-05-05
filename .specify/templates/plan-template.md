@@ -31,7 +31,18 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Mandatory Verification**:
+
+- [ ] **Architecture**: Feature respects microservices boundaries (Java 25 + Spring Boot 4); no monolithic additions
+- [ ] **API-First Design**: RESTful contract defined; asynchronous messaging declared if used
+- [ ] **Security**: Authentication uses Keycloak (Client Credentials for service-to-service, Authorization Code for users); no custom auth
+- [ ] **Observability**: Structured JSON logging, Micrometer metrics, OpenTelemetry tracing configured; LGTM export validated
+- [ ] **Configuration**: All env-specific settings externalized as environment variables (no hardcoded values)
+- [ ] **Testing**: Specification includes acceptance criteria; integration test strategy defined (PostgreSQL test containers + Keycloak stub)
+- [ ] **Deployment**: Helm chart structure + values.yaml template prepared; FluxCD integration ready
+- [ ] **Kubernetes**: Container image versioning (semantic), health checks (liveness + readiness), graceful termination (30s) planned
+- [ ] **Database**: PostgreSQL schema migrations (Flyway/Liquibase) versioned in Git; no manual DDL
+- [ ] **Compliance**: 15-factor checklist completed (codebase, dependencies, config, backing services, build/release/run, processes, port binding, concurrency, disposability, dev/prod parity, logs, admin tasks, monitoring, persistence, graceful shutdown)
 
 ## Project Structure
 

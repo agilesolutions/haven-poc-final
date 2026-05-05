@@ -82,6 +82,13 @@
   Fill them out with the right functional requirements.
 -->
 
+## Requirements *(mandatory)*
+
+<!--
+   ACTION REQUIRED: The content in this section represents placeholders.
+   Fill them out with the right functional requirements.
+-->
+
 ### Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
@@ -94,6 +101,28 @@
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+
+### Security Requirements
+
+- **SR-001**: Service-to-service communication MUST use OAuth2 Client Credentials Flow with Keycloak (no custom auth)
+- **SR-002**: End-user authentication MUST use OAuth2 Authorization Code Flow + OIDC with Keycloak (no plaintext passwords)
+- **SR-003**: All API endpoints MUST validate JWT tokens issued by Keycloak
+- **SR-004**: Secrets (API keys, credentials) MUST be stored in external vault (Azure Key Vault, AWS Secrets Manager) via External Secrets Operator
+
+### Deployment Requirements
+
+- **DR-001**: Service MUST be containerized with multi-stage Dockerfile; image tagged with semantic version
+- **DR-002**: Kubernetes manifests MUST include Helm chart + values.yaml; deployment via FluxCD HelmRelease only
+- **DR-003**: Service MUST include liveness and readiness probes; graceful termination with 30-second drain period
+- **DR-004**: Service MUST be stateless; any persistent state MUST use PostgreSQL
+
+### Observability Requirements
+
+- **OR-001**: Application MUST output structured JSON logs to stdout via Logback
+- **OR-002**: Application MUST export metrics via Micrometer to Prometheus (Mimir)
+- **OR-003**: Application MUST export traces via OpenTelemetry to Tempo
+- **OR-004**: Application MUST export logs via OpenTelemetry to Loki
+- **OR-005**: Health endpoints MUST be available at `/health/live` (liveness) and `/health/ready` (readiness)
 
 ### Key Entities *(include if feature involves data)*
 

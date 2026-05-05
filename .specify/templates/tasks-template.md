@@ -60,14 +60,22 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-Examples of foundational tasks (adjust based on your project):
+Foundation tasks aligned with Haven POC Constitution principles:
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T004 Setup PostgreSQL database schema and Flyway/Liquibase migrations framework
+- [ ] T005 [P] Configure Keycloak Client Credentials clients for service-to-service auth (OAuth2)
+- [ ] T006 [P] Configure Keycloak Authorization Code + OIDC realm for end-user authentication
+- [ ] T007 [P] Setup Spring Security with Keycloak adapter; JWT validation filters configured
+- [ ] T008 [P] Setup API routing and middleware structure (Spring Boot controllers, error handling)
+- [ ] T009 [P] Configure Micrometer + OpenTelemetry exports (metrics → Mimir, traces → Tempo, logs → Loki)
+- [ ] T010 [P] Setup Logback with structured JSON output to stdout
+- [ ] T011 [P] Create Dockerfile with multi-stage build; configure health check endpoints (/health/live, /health/ready)
+- [ ] T012 [P] Generate Helm chart scaffold: values.yaml, deployment.yaml, service.yaml, configmap.yaml
+- [ ] T013 Create base entities/models that all stories depend on (if any)
+- [ ] T014 [P] Configure environment variable externalization (Spring Boot profiles, ConfigMaps)
+- [ ] T015 Setup Kubernetes probe configuration (liveness, readiness, termination grace period 30s)
+- [ ] T016 [P] Configure FluxCD integration: HelmRelease custom resource prepared
+- [ ] T017 Configure graceful shutdown handlers (drain connections on SIGTERM)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
