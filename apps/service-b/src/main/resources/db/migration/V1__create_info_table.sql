@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS info (
+  name TEXT PRIMARY KEY,
+  description TEXT,
+  version TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

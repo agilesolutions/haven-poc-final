@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - helmrepositories.yaml
+  - helmrelease-ingress-nginx.yaml
+  - nginx-namespace.yaml
+  - helmrelease-cert-manager.yaml
+  - cert-manager-namespace.yaml
+  - helmrelease-keycloak.yaml
+  - keycloak-namespace.yaml
+  - lgtm-namespace.yaml
+# Disable for local POC (heavy)
+#  - helmrelease-grafana.yaml
+#  - helmrelease-loki.yaml
+#  - helmrelease-tempo.yaml
+#  - helmrelease-prometheus.yaml
+  - helmrelease-lgtm.yaml

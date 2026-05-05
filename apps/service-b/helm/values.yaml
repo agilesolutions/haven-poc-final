@@ -1,0 +1,24 @@
+image:
+  repository: agilesolutions/service-b
+  tag: 0.0.1
+
+service:
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: service-b.local
+
+application:
+  featureToggle: true
+  name: "Service A"
+  description: "Demo service"
+  version: "0.0.1"
+
+database:
+  host: pg-payments-prod.postgres.database.azure.com
+  name: info
+
+oauth2:
+  issuerUri: http://keycloak-keycloakx-http.keycloak/auth/realms/demo

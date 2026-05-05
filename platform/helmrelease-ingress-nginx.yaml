@@ -1,0 +1,123 @@
+# helmrelease-ingress-helmrelease-ingress-nginx.yaml - Production NGINX Ingress Controller deployment
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: ingress-nginx
+      version: "4.15.0"
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+        namespace: flux-system
+      interval: 15m
+  install:
+    createNamespace: true
+    timeout: 10m
+    remediation:
+      retries: 3
+  upgrade:
+    timeout: 10m
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    image:
+      repository: nginx/nginx-ingress
+      tag: latest
+    controller:
+      admissionWebhooks:
+        enabled: false
+      # Run two replicas for high availability
+      replicaCount: 1
+
+      # Use the IngressClass resource to register this controller
+      ingressClassResource:
+        name: nginx
+        enabled: true
+        default: true
+        controllerValue: "k8s.io/ingress-nginx"
+
+      # Resource requests and limits
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+      # Service configuration for the controller
+      service:
+        enabled: true
+        type: LoadBalancer
+        # Annotations for cloud provider load balancers (AWS example)
+        annotations: {}
+          # service.beta.kubernetes.io/aws-load-balancer-type: nlb
+        # service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+
+      # Enable Prometheus metrics
+      metrics:
+        enabled: false
+        serviceMonitor:
+          enabled: false
+          namespace: ingress-nginx
+
+      # Custom NGINX configuration
+      config:
+        # Use real client IP behind load balancer
+        use-forwarded-headers: "true"
+        # Enable gzip compression
+        use-gzip: "true"
+        # Set proxy body size limit
+        proxy-body-size: "50m"
+        # Connection timeouts
+        proxy-connect-timeout: "10"
+        proxy-read-timeout: "120"
+        proxy-send-timeout: "120"
+        # Enable HTTP Strict Transport Security
+        hsts: "true"
+        hsts-max-age: "31536000"
+        hsts-include-subdomains: "true"
+
+      # Pod anti-affinity to spread replicas across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - ingress-nginx
+                topologyKey: kubernetes.io/hostname
+
+      # Pod disruption budget
+      minAvailable: 1
+
+      # Autoscaling configuration
+      autoscaling:
+        enabled: true
+        minReplicas: 2
+        maxReplicas: 10
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+
+    # Default backend for unmatched requests
+    defaultBackend:
+      enabled: true
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

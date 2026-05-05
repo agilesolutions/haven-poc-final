@@ -1,0 +1,20 @@
+meta {
+  name: service a info
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8080/api/service-a/info
+  body: none
+  auth: inherit
+}
+
+headers {
+  Host: service-a.local
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

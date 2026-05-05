@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-configmap
+data:
+  application.yaml: |
+    application:
+      info:
+        name: {{ .Values.application.name }}
+        description: {{ .Values.application.description }}
+        version: {{ .Values.application.version }}
+        featureToggle: {{ .Values.application.featureToggle }}
+    spring:
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: {{ .Values.oauth2.issuerUri }}

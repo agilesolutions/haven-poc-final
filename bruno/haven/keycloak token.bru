@@ -1,0 +1,27 @@
+meta {
+  name: keycloak token
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8080/auth/realms/demo/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+  Host: keycloak-keycloakx.keycloak.example.com
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: service-a
+  client_secret: GaKOD7BoDSki3Kf9Hu0bG9mmnQJPy26f
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

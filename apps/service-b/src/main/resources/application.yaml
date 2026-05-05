@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: service-b
+  config:
+    import: optional:file:/etc/secrets/db/
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak/realms/demo
+
+app:
+  db:
+    password: ${db-password}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}?sslmode=require
+    username: ${DB_USERNAME}
+    password: ${app.db.password}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  tracing:
+    sampling:
+      probability: 1.0 # 100% sampling for development
+
+  otlp:
+    metrics:
+      export:
+        url: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/metrics
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/traces
+    logging:
+      export:
+        otlp:
+          endpoint: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/logs
+
+service:
+  name: "Service B"
+  description: "Demo service"
+  version: "0.0.1"

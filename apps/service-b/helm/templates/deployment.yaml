@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+              value: "file:/config/"
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_HOST
+              value: {{ .Values.database.host }}
+            - name: DB_NAME
+              value: {{ .Values.database.name }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: db-secret-volume
+              mountPath: /etc/secrets/db
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "app.fullname" . }}-configmap
+        - name: db-secret-volume
+          secret:
+            secretName: {{ include "app.fullname" . }}-db-secret

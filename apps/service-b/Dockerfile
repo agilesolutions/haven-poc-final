@@ -1,0 +1,6 @@
+FROM amazoncorretto:25-alpine-jdk
+VOLUME /tmp
+ARG JAR_FILE=build/libs/application.jar
+COPY ${JAR_FILE} app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app.jar"]
