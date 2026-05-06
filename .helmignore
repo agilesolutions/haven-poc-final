@@ -1,0 +1,72 @@
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Build artifacts
+build/
+target/
+dist/
+*.tar.gz
+*.tgz
+
+# Test outputs
+*.log
+*.log.*
+coverage/
+.coverage
+
+# CI/CD
+.gitlab-ci.yml
+.github/
+
+# Documentation and metadata
+README.md
+LICENSE
+CHANGELOG.md
+*.md
+
+# Frontend (if applicable)
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# Kubernetes manifests (if not part of Helm)
+k8s/
+*.yaml
+!templates/**
+
+# Env files
+.env*
+.env.local
+
+# Terraform
+.terraform/
+*.tfstate*
+.terraform.lock.hcl
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Temporary files
+*.bak
+*.backup
+*.orig
+*~
+
