@@ -63,11 +63,11 @@ Phase 7 (Polish)
 - [x] T001 Create gradle multi-project build structure in `apps/` with settings.gradle and build.gradle
 - [x] T002 [P] Create Service A project structure in `apps/service-a/` with main/test directory layout
 - [x] T003 [P] Create Service B project structure in `apps/service-b/` with main/test directory layout
-- [ ] T004 [P] Create Dockerfile for Service A at `apps/service-a/Dockerfile` (multi-stage, Java 25)
-- [ ] T005 [P] Create Dockerfile for Service B at `apps/service-b/Dockerfile` (multi-stage, Java 25)
-- [ ] T006 Create Helm chart structure for Service A at `apps/service-a/helm/` with Chart.yaml and values.yaml
-- [ ] T007 Create Helm chart structure for Service B at `apps/service-b/helm/` with Chart.yaml and values.yaml
-- [ ] T008 Create .gitlab-ci.yml at repository root with build, test, and push stages
+- [x] T004 [P] Create Dockerfile for Service A at `apps/service-a/Dockerfile` (multi-stage, Java 25)
+- [x] T005 [P] Create Dockerfile for Service B at `apps/service-b/Dockerfile` (multi-stage, Java 25)
+- [x] T006 Create Helm chart structure for Service A at `apps/service-a/helm/` with Chart.yaml and values.yaml
+- [x] T007 Create Helm chart structure for Service B at `apps/service-b/helm/` with Chart.yaml and values.yaml
+- [x] T008 Create .gitlab-ci.yml at repository root with build, test, and push stages
 
 ---
 

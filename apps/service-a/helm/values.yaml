@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: service-b
+  repository: service-a
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -20,14 +20,14 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: service-b.example.com
+    - host: service-a.example.com
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: service-b-tls
+    - secretName: service-a-tls
       hosts:
-        - service-b.example.com
+        - service-a.example.com
 
 resources:
   limits:
@@ -48,11 +48,9 @@ env:
   - name: SPRING_PROFILES_ACTIVE
     value: prod
   - name: SPRING_APPLICATION_NAME
-    value: service-b
-  - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-    value: validate
-  - name: SPRING_FLYWAY_ENABLED
-    value: "true"
+    value: service-a
+  - name: SPRING_BOOT_ADMIN_CLIENT_URL
+    value: http://spring-boot-admin:8080
 
 envFrom: []
 # - configMapRef:
@@ -64,18 +62,6 @@ secrets: []
 #     secretKeyRef:
 #       name: db-credentials
 #       key: password
-
-database:
-  host: postgresql
-  port: 5432
-  name: info
-  username: postgres
-  # password should be supplied via secret
-
-oauth2:
-  issuerUri: http://keycloak:8080/auth/realms/demo
-  clientId: service-b
-  # clientSecret should be supplied via secret
 
 securityContext:
   runAsNonRoot: true
@@ -118,5 +104,6 @@ affinity:
               - key: app
                 operator: In
                 values:
-                  - service-b
+                  - service-a
           topologyKey: kubernetes.io/hostname
+
