@@ -32,14 +32,27 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
 	implementation 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+	
 	// Spring Boot 4 OpenTelemetry for distributed tracing and metrics
 	implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
 	implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha'
 	implementation 'org.springframework.boot:spring-boot-starter-aop:3.3.5'
+	
+	// Micrometer and Prometheus for metrics
+	implementation 'io.micrometer:micrometer-registry-prometheus:1.12.2'
+	
+	// OpenTelemetry exporters for LGTM (OTLP protocol)
+	implementation 'io.opentelemetry:opentelemetry-exporter-otlp:1.32.0'
+	implementation 'io.opentelemetry:opentelemetry-sdk-extension-jaeger-remote-sampler:1.32.0'
+	
+	// Loki exporter for logs
+	runtimeOnly 'com.grafana.loki:loki-logback-appender:1.4.1'
 
-
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.testcontainers:testcontainers:1.19.3'
+	testImplementation 'org.testcontainers:postgresql:1.19.3'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

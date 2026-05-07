@@ -83,17 +83,17 @@ Phase 7 (Polish)
 
 ### Infrastructure & Configuration Tasks
 
-- [ ] T009 Add Spring Boot 4 and Spring Security dependencies to `apps/service-a/build.gradle`
-- [ ] T010 Add Spring Boot 4 and Spring Security dependencies to `apps/service-b/build.gradle`
-- [ ] T011 Add OpenTelemetry, Micrometer, and LGTM exporter dependencies to both build.gradle files
-- [ ] T012 [P] Create application.yaml template in `apps/service-a/src/main/resources/` with Spring Boot and observability config
-- [ ] T013 [P] Create application.yaml template in `apps/service-b/src/main/resources/` with Spring Boot and observability config
-- [ ] T014 [P] Create logback-spring.xml in `apps/service-a/src/main/resources/` for JSON logging
-- [ ] T015 [P] Create logback-spring.xml in `apps/service-b/src/main/resources/` for JSON logging
-- [ ] T016 Create PostgreSQL migration script `V1__create_entity_table.sql` in `apps/service-b/src/main/resources/db/migration/`
-- [ ] T017 Add Flyway migration dependency to Service B build.gradle
-- [ ] T018 Create OpenTelemetry configuration class in `apps/service-b/src/main/java/com/agilesolutions/service_b/config/ObservabilityConfig.java`
-- [ ] T019 Create OpenTelemetry configuration class in `apps/service-a/src/main/java/com/agilesolutions/service_a/config/ObservabilityConfig.java`
+- [x] T009 Add Spring Boot 4 and Spring Security dependencies to `apps/service-a/build.gradle`
+- [x] T010 Add Spring Boot 4 and Spring Security dependencies to `apps/service-b/build.gradle`
+- [x] T011 Add OpenTelemetry, Micrometer, and LGTM exporter dependencies to both build.gradle files
+- [x] T012 [P] Create application.yaml template in `apps/service-a/src/main/resources/` with Spring Boot and observability config
+- [x] T013 [P] Create application.yaml template in `apps/service-b/src/main/resources/` with Spring Boot and observability config
+- [x] T014 [P] Create logback-spring.xml in `apps/service-a/src/main/resources/` for JSON logging
+- [x] T015 [P] Create logback-spring.xml in `apps/service-b/src/main/resources/` for JSON logging
+- [x] T016 Create PostgreSQL migration script `V1__create_entity_table.sql` in `apps/service-b/src/main/resources/db/migration/`
+- [x] T017 Add Flyway migration dependency to Service B build.gradle
+- [x] T018 Create OpenTelemetry configuration class in `apps/service-b/src/main/java/com/agilesolutions/service_b/config/ObservabilityConfig.java`
+- [x] T019 Create OpenTelemetry configuration class in `apps/service-a/src/main/java/com/agilesolutions/service_a/config/ObservabilityConfig.java`
 
 ---
 
