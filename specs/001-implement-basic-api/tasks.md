@@ -110,27 +110,27 @@ Phase 7 (Polish)
 
 ### Service B - Data Access
 
-- [ ] T020 Create Entity model class in `apps/service-b/src/main/java/com/agilesolutions/service_b/model/Entity.java` with id, name, description, version fields
-- [ ] T021 Create EntityRepository interface in `apps/service-b/src/main/java/com/agilesolutions/service_b/repository/EntityRepository.java` extending JpaRepository
-- [ ] T022 Create EntityService class in `apps/service-b/src/main/java/com/agilesolutions/service_b/service/EntityService.java` with findById(UUID) method
-- [ ] T023 [P] Create unit tests for EntityService in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/EntityServiceTest.java`
+- [x] T020 Create Entity model class in `apps/service-b/src/main/java/com/agilesolutions/service_b/model/Entity.java` with id, name, description, version fields
+- [x] T021 Create EntityRepository interface in `apps/service-b/src/main/java/com/agilesolutions/service_b/repository/EntityRepository.java` extending JpaRepository
+- [x] T022 Create EntityService class in `apps/service-b/src/main/java/com/agilesolutions/service_b/service/EntityService.java` with findById(UUID) method
+- [x] T023 [P] Create unit tests for EntityService in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/EntityServiceTest.java`
 
 ### Service B - API Endpoint
 
-- [ ] T024 Create InfoController in `apps/service-b/src/main/java/com/agilesolutions/service_b/controller/InfoController.java` with GET /api/internal/info/{id} endpoint
-- [ ] T025 [P] Create unit tests for InfoController in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/InfoControllerTest.java`
+- [x] T024 Create InfoController in `apps/service-b/src/main/java/com/agilesolutions/service_b/controller/InfoController.java` with GET /api/internal/info/{id} endpoint
+- [x] T025 [P] Create unit tests for InfoController in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/InternalInfoControllerTest.java`
 
 ### Service A - Gateway Service
 
-- [ ] T026 Create EntityClient (HTTP client) in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/EntityClient.java` to call Service B
-- [ ] T027 Create InfoService in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/InfoService.java` orchestrating logic
-- [ ] T028 Create InfoController in `apps/service-a/src/main/java/com/agilesolutions/service_a/controller/InfoController.java` with GET /api/info/{id} endpoint
-- [ ] T029 [P] Create unit tests for Service A in `apps/service-a/src/test/java/com/agilesolutions/service_a/unit/InfoControllerTest.java`
+- [x] T026 Create EntityClient (HTTP client) in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/EntityClient.java` to call Service B
+- [x] T027 Create InfoService in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/InfoService.java` orchestrating logic
+- [x] T028 Create InfoController in `apps/service-a/src/main/java/com/agilesolutions/service_a/controller/InfoController.java` with GET /api/info/{id} endpoint
+- [x] T029 [P] Create unit tests for Service A in `apps/service-a/src/test/java/com/agilesolutions/service_a/unit/InfoControllerTest.java`
 
 ### Integration Tests for US1
 
-- [ ] T030 Create integration test using Testcontainers for PostgreSQL in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/EntityServiceIntegrationTest.java`
-- [ ] T031 [P] Create integration test for Service A calling Service B in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/InfoControllerIntegrationTest.java`
+- [x] T030 Create integration test using Testcontainers for PostgreSQL in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/EntityServiceIntegrationTest.java`
+- [x] T031 [P] Create integration test for Service A calling Service B in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/InfoControllerIntegrationTest.java`
 
 ---
 
