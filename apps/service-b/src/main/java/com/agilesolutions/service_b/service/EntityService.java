@@ -56,7 +56,7 @@ public class EntityService {
     public Entity findActiveById(UUID id) {
         log.debug("Finding active entity with id: {}", id);
         
-        return entityRepository.findByIdAndIsActive(id, true)
+        return entityRepository.findByIdAndActive(id, true)
                 .orElseThrow(() -> {
                     log.warn("Active entity not found with id: {}", id);
                     return new ResponseStatusException(
@@ -110,7 +110,7 @@ public class EntityService {
             entity.setVersion("1.0.0");
         }
         
-        entity.setIsActive(true);
+        entity.setActive(true);
         Entity saved = entityRepository.save(entity);
         
         log.info("Entity created successfully with id: {}", saved.getId());
@@ -160,7 +160,7 @@ public class EntityService {
         log.info("Deactivating entity with id: {}", id);
         
         Entity entity = findById(id);
-        entity.setIsActive(false);
+        entity.setActive(false);
         entityRepository.save(entity);
         
         log.info("Entity deactivated successfully with id: {}", id);

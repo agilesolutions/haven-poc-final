@@ -82,7 +82,7 @@ public class Entity {
      */
     @Column(name = "is_active", nullable = false)
     @Builder.Default
-    private Boolean isActive = true;
+    private Boolean active = true;
 
     /**
      * Pre-persist hook to set creation timestamp

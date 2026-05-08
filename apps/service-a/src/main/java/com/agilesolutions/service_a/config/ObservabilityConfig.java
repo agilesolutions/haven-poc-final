@@ -1,6 +1,5 @@
 package com.agilesolutions.service_a.config;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
@@ -88,15 +87,11 @@ public class ObservabilityConfig {
      */
     @Bean
     public TracerProvider globalTracerProvider(SdkTracerProvider sdkTracerProvider) {
-        GlobalOpenTelemetry.set(GlobalOpenTelemetry.get()
-                .withTracing(sdkTracerProvider));
         return sdkTracerProvider;
     }
 
     @Bean
     public MeterProvider globalMeterProvider(SdkMeterProvider sdkMeterProvider) {
-        GlobalOpenTelemetry.set(GlobalOpenTelemetry.get()
-                .withMetrics(sdkMeterProvider));
         return sdkMeterProvider;
     }
 }

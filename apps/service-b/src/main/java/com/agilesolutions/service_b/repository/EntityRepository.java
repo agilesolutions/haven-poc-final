@@ -29,24 +29,24 @@ public interface EntityRepository extends JpaRepository<Entity, UUID> {
     /**
      * Find entity by id and active status
      * @param id the entity id
-     * @param isActive the active status
+     * @param active the active status
      * @return Optional containing the entity if found
      */
-    Optional<Entity> findByIdAndIsActive(UUID id, Boolean isActive);
+    Optional<Entity> findByIdAndActive(UUID id, Boolean active);
 
     /**
      * Find active entities by name
      * @param name the entity name
      * @return Optional containing the active entity if found
      */
-    @Query("SELECT e FROM Entity e WHERE e.name = :name AND e.isActive = true")
+    @Query("SELECT e FROM Entity e WHERE e.name = :name AND e.active = true")
     Optional<Entity> findActiveByName(@Param("name") String name);
 
     /**
      * Find all active entities
      * @return list of active entities
      */
-    @Query("SELECT e FROM Entity e WHERE e.isActive = true ORDER BY e.createdAt DESC")
+    @Query("SELECT e FROM Entity e WHERE e.active = true ORDER BY e.createdAt DESC")
     List<Entity> findAllActive();
 
     /**
@@ -54,7 +54,7 @@ public interface EntityRepository extends JpaRepository<Entity, UUID> {
      * @param id the entity id
      * @return true if entity exists and is active, false otherwise
      */
-    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Entity e WHERE e.id = :id AND e.isActive = true")
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Entity e WHERE e.id = :id AND e.active = true")
     boolean existsActiveById(@Param("id") UUID id);
 
     /**

@@ -147,26 +147,26 @@ Phase 7 (Polish)
 
 ### Keycloak Configuration (Setup)
 
-- [ ] T032 Create docker-compose.yml at repository root with Keycloak and PostgreSQL for local development
-- [ ] T033 Create Keycloak client configuration script in `infra/keycloak/setup-clients.sh` to create service-a and service-b clients
+- [x] T032 Create docker-compose.yml at repository root with Keycloak and PostgreSQL for local development
+- [x] T033 Create Keycloak client configuration script in `infra/keycloak/setup-clients.sh` to create service-a and service-b clients
 
 ### Service A - OAuth2 Client
 
-- [ ] T034 Add Spring Security OAuth2 Client dependency to `apps/service-a/build.gradle`
-- [ ] T035 Create OAuth2ClientConfig in `apps/service-a/src/main/java/com/agilesolutions/service_a/config/OAuth2ClientConfig.java` with token acquisition logic
-- [ ] T036 Update EntityClient to use OAuth2 token when calling Service B in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/EntityClient.java`
+- [x] T034 Add Spring Security OAuth2 Client dependency to `apps/service-a/build.gradle`
+- [x] T035 Create OAuth2ClientConfig in `apps/service-a/src/main/java/com/agilesolutions/service_a/config/OAuth2ClientConfig.java` with token acquisition logic
+- [x] T036 Update EntityClient to use OAuth2 token when calling Service B in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/EntityClient.java`
 
 ### Service B - OAuth2 Resource Server
 
-- [ ] T037 Add Spring Security OAuth2 Resource Server dependency to `apps/service-b/build.gradle`
-- [ ] T038 Create OAuth2ResourceServerConfig in `apps/service-b/src/main/java/com/agilesolutions/service_b/config/OAuth2ResourceServerConfig.java` for JWT validation
-- [ ] T039 Secure InfoController endpoint with @EnableWebSecurity and JWT validation in `apps/service-b/src/main/java/com/agilesolutions/service_b/controller/InfoController.java`
-- [ ] T040 [P] Create unit tests for OAuth2 token validation in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/OAuth2ResourceServerConfigTest.java`
+- [x] T037 Add Spring Security OAuth2 Resource Server dependency to `apps/service-b/build.gradle`
+- [x] T038 Create OAuth2ResourceServerConfig in `apps/service-b/src/main/java/com/agilesolutions/service_b/config/OAuth2ResourceServerConfig.java` for JWT validation
+- [x] T039 Secure InfoController endpoint with @EnableWebSecurity and JWT validation in `apps/service-b/src/main/java/com/agilesolutions/service_b/controller/InfoController.java`
+- [x] T040 [P] Create unit tests for OAuth2 token validation in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/OAuth2ResourceServerConfigTest.java`
 
 ### Integration Tests for US2
 
-- [ ] T041 Create integration test with Testcontainers for Keycloak in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/OAuth2ClientIntegrationTest.java` verifying token acquisition
-- [ ] T042 [P] Create integration test for Service A→Service B with valid/invalid tokens in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/ServiceToServiceAuthIntegrationTest.java`
+- [x] T041 Create integration test with Testcontainers for Keycloak in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/OAuth2ClientIntegrationTest.java` verifying token acquisition
+- [x] T042 [P] Create integration test for Service A→Service B with valid/invalid tokens in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/ServiceToServiceAuthIntegrationTest.java`
 
 ---
 
