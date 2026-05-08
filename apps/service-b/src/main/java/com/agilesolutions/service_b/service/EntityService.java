@@ -1,9 +1,11 @@
 package com.agilesolutions.service_b.service;
 
+import com.agilesolutions.service_b.exception.ServiceUnavailableException;
 import com.agilesolutions.service_b.model.Entity;
 import com.agilesolutions.service_b.repository.EntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,18 +34,29 @@ public class EntityService {
      * @param id the entity UUID
      * @return the entity if found
      * @throws ResponseStatusException with 404 if entity not found
+     * @throws ServiceUnavailableException if database is unavailable
      */
     public Entity findById(UUID id) {
         log.debug("Finding entity with id: {}", id);
         
-        return entityRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.warn("Entity not found with id: {}", id);
-                    return new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Entity not found with id: " + id
-                    );
-                });
+        try {
+            return entityRepository.findById(id)
+                    .orElseThrow(() -> {
+                        log.warn("Entity not found with id: {}", id);
+                        return new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Entity not found with id: " + id
+                        );
+                    });
+        } catch (DataAccessException e) {
+            log.error("Database error while finding entity with id: {}: {}", id, e.getMessage(), e);
+            throw new ServiceUnavailableException("Database is unavailable", e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while finding entity with id: {}: {}", id, e.getMessage(), e);
+            throw new ServiceUnavailableException("Error retrieving entity", e);
+        }
     }
 
     /**
@@ -52,18 +65,29 @@ public class EntityService {
      * @param id the entity UUID
      * @return the active entity if found
      * @throws ResponseStatusException with 404 if entity not found
+     * @throws ServiceUnavailableException if database is unavailable
      */
     public Entity findActiveById(UUID id) {
         log.debug("Finding active entity with id: {}", id);
         
-        return entityRepository.findByIdAndActive(id, true)
-                .orElseThrow(() -> {
-                    log.warn("Active entity not found with id: {}", id);
-                    return new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Active entity not found with id: " + id
-                    );
-                });
+        try {
+            return entityRepository.findByIdAndActive(id, true)
+                    .orElseThrow(() -> {
+                        log.warn("Active entity not found with id: {}", id);
+                        return new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Active entity not found with id: " + id
+                        );
+                    });
+        } catch (DataAccessException e) {
+            log.error("Database error while finding active entity with id: {}: {}", id, e.getMessage(), e);
+            throw new ServiceUnavailableException("Database is unavailable", e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while finding active entity with id: {}: {}", id, e.getMessage(), e);
+            throw new ServiceUnavailableException("Error retrieving entity", e);
+        }
     }
 
     /**
@@ -72,18 +96,29 @@ public class EntityService {
      * @param name the entity name
      * @return the entity if found
      * @throws ResponseStatusException with 404 if entity not found
+     * @throws ServiceUnavailableException if database is unavailable
      */
     public Entity findByName(String name) {
         log.debug("Finding entity with name: {}", name);
         
-        return entityRepository.findActiveByName(name)
-                .orElseThrow(() -> {
-                    log.warn("Entity not found with name: {}", name);
-                    return new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Entity not found with name: " + name
-                    );
-                });
+        try {
+            return entityRepository.findActiveByName(name)
+                    .orElseThrow(() -> {
+                        log.warn("Entity not found with name: {}", name);
+                        return new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Entity not found with name: " + name
+                        );
+                    });
+        } catch (DataAccessException e) {
+            log.error("Database error while finding entity with name: {}: {}", name, e.getMessage(), e);
+            throw new ServiceUnavailableException("Database is unavailable", e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while finding entity with name: {}: {}", name, e.getMessage(), e);
+            throw new ServiceUnavailableException("Error retrieving entity", e);
+        }
     }
 
     /**
