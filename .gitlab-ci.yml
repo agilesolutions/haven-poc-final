@@ -1,6 +1,8 @@
 stages:
   - build
   - test
+  - integration
+  - scan
   - push
   - deploy
 
@@ -8,6 +10,9 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
   CI_REGISTRY_IMAGE: ${CI_REGISTRY}/${CI_PROJECT_PATH}
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS: "true"
+  DOCKER_CERT_PATH: ${DOCKER_TLS_CERTDIR}
 
 # Build Service A
 build:service-a:
@@ -64,6 +69,55 @@ test:service-b-unit:
       junit: apps/service-b/build/test-results/test/**/*.xml
   only:
     - branches
+
+# Integration Tests - Service A
+test:service-a-integration:
+  stage: integration
+  image: gradle:8.5-jdk25
+  services:
+    - docker:24-dind
+  script:
+    - cd apps/service-a
+    - gradle test --tests "*Integration*"
+  artifacts:
+    reports:
+      junit: apps/service-a/build/test-results/test/**/*.xml
+  only:
+    - branches
+  allow_failure: true
+
+# Integration Tests - Service B
+test:service-b-integration:
+  stage: integration
+  image: gradle:8.5-jdk25
+  services:
+    - docker:24-dind
+    - postgres:15
+  script:
+    - cd apps/service-b
+    - gradle test --tests "*Integration*"
+  artifacts:
+    reports:
+      junit: apps/service-b/build/test-results/test/**/*.xml
+  only:
+    - branches
+  allow_failure: true
+
+# Dockerfile Lint - Service A
+scan:service-a-dockerfile:
+  stage: scan
+  image: hadolint/hadolint:latest-debian
+  script:
+    - hadolint apps/service-a/Dockerfile
+  allow_failure: true
+
+# Dockerfile Lint - Service B
+scan:service-b-dockerfile:
+  stage: scan
+  image: hadolint/hadolint:latest-debian
+  script:
+    - hadolint apps/service-b/Dockerfile
+  allow_failure: true
 
 # Docker Build & Push - Service A
 push:service-a:

@@ -12,8 +12,10 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -103,6 +105,19 @@ public class EntityClient {
             } catch (HttpClientErrorException.NotFound e) {
                 log.warn("Entity not found in Service B for: {}", identifier);
                 throw e;
+            } catch (ResourceAccessException e) {
+                // Handle timeout and connection errors
+                log.warn("Attempt {}/{} - Timeout or connection error: {}", attempt, maxRetries, e.getMessage());
+                lastException = e;
+                
+                if (attempt == maxRetries) {
+                    log.error("Connection timeout to Service B after {} attempts", maxRetries);
+                    throw new ResponseStatusException(
+                            org.springframework.http.HttpStatus.GATEWAY_TIMEOUT,
+                            "Service B is not responding. Please try again later."
+                    );
+                }
+                
             } catch (RestClientException e) {
                 log.warn("Attempt {}/{} failed to fetch from Service B: {}", attempt, maxRetries, e.getMessage());
                 lastException = e;
@@ -124,9 +139,9 @@ public class EntityClient {
         }
         
         log.error("Failed to fetch entity info for {} after {} attempts", identifier, maxRetries);
-        throw new RuntimeException(
-                String.format("Failed to fetch entity info for %s after %d attempts", identifier, maxRetries),
-                lastException
+        throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                "Service B is unavailable. Please try again later."
         );
     }
 

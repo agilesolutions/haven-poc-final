@@ -24,9 +24,17 @@ CREATE INDEX idx_entity_updated_at ON entity(updated_at);
 -- Create composite index for frequently used queries
 CREATE INDEX idx_entity_active_created_at ON entity(is_active, created_at DESC);
 
--- Add constraints
+-- Create index for querying active entities by name
+CREATE INDEX idx_entity_active_name ON entity(is_active, name);
+
+-- Create index for lookup performance
+CREATE UNIQUE INDEX idx_entity_name_unique ON entity(name) WHERE is_active = true;
+
+-- Add constraints with meaningful names
 ALTER TABLE entity ADD CONSTRAINT chk_entity_name_not_empty CHECK (name <> '');
 ALTER TABLE entity ADD CONSTRAINT chk_entity_version_not_empty CHECK (version <> '');
+ALTER TABLE entity ADD CONSTRAINT chk_entity_name_length CHECK (char_length(name) <= 255);
+ALTER TABLE entity ADD CONSTRAINT chk_entity_version_length CHECK (char_length(version) <= 50);
 
 -- Add comment for documentation
 COMMENT ON TABLE entity IS 'Core entity information table for system data';

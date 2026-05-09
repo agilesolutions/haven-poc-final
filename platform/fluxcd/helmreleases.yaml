@@ -1,0 +1,134 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: haven-poc-repository
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/your-org/haven-poc-sdd.git
+  ref:
+    branch: main
+  secretRef:
+    name: github-credentials
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: service-a
+  namespace: default
+spec:
+  interval: 5m
+  timeout: 5m
+  chart:
+    spec:
+      chart: ./apps/service-a/helm
+      sourceRef:
+        kind: GitRepository
+        name: haven-poc-repository
+        namespace: flux-system
+  install:
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  values:
+    replicaCount: 2
+    image:
+      repository: your-registry/service-a
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080
+    database:
+      host: postgresql.default.svc.cluster.local
+      port: 5432
+      name: service_a_db
+    serviceBUrl: http://service-b.default.svc.cluster.local:8080
+    keycloak:
+      issuerUri: http://keycloak.keycloak.svc.cluster.local:8080/auth/realms/demo
+      jwkSetUri: http://keycloak.keycloak.svc.cluster.local:8080/auth/realms/demo/protocol/openid-connect/certs
+    observability:
+      otlpEndpoint: http://lgtm-gateway.observability.svc.cluster.local:4317
+      tracingSampleProbability: "1.0"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+  postRenderers:
+    - kustomize:
+        patchesStrategicMerge:
+          - apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: service-a
+            spec:
+              template:
+                spec:
+                  serviceAccountName: service-a
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: service-b
+  namespace: default
+spec:
+  interval: 5m
+  timeout: 5m
+  chart:
+    spec:
+      chart: ./apps/service-b/helm
+      sourceRef:
+        kind: GitRepository
+        name: haven-poc-repository
+        namespace: flux-system
+  install:
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  values:
+    replicaCount: 2
+    image:
+      repository: your-registry/service-b
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080
+    database:
+      host: postgresql.default.svc.cluster.local
+      port: 5432
+      name: service_b_db
+      poolSize: 10
+      connectionTimeout: 20000
+    keycloak:
+      issuerUri: http://keycloak.keycloak.svc.cluster.local:8080/auth/realms/demo
+      jwkSetUri: http://keycloak.keycloak.svc.cluster.local:8080/auth/realms/demo/protocol/openid-connect/certs
+    observability:
+      otlpEndpoint: http://lgtm-gateway.observability.svc.cluster.local:4317
+      tracingSampleProbability: "1.0"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+  postRenderers:
+    - kustomize:
+        patchesStrategicMerge:
+          - apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: service-b
+            spec:
+              template:
+                spec:
+                  serviceAccountName: service-b
+
+

@@ -183,20 +183,20 @@ Phase 7 (Polish)
 
 ### Database Schema & Migrations
 
-- [ ] T043 Enhance V1__create_entity_table.sql migration with indexes and constraints in `apps/service-b/src/main/resources/db/migration/`
-- [ ] T044 Create V2__add_entity_seed_data.sql migration for test data in `apps/service-b/src/main/resources/db/migration/`
+- [x] T043 Enhance V1__create_entity_table.sql migration with indexes and constraints in `apps/service-b/src/main/resources/db/migration/`
+- [x] T044 Create V2__add_entity_seed_data.sql migration for test data in `apps/service-b/src/main/resources/db/migration/`
 
 ### Database Error Handling
 
-- [ ] T045 Add exception handling in EntityService for database errors in `apps/service-b/src/main/java/com/agilesolutions/service_b/service/EntityService.java`
-- [ ] T046 Create custom exception ServiceUnavailableException in `apps/service-b/src/main/java/com/agilesolutions/service_b/exception/ServiceUnavailableException.java`
-- [ ] T047 [P] Create unit tests for database error scenarios in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/EntityServiceErrorTest.java`
+- [x] T045 Add exception handling in EntityService for database errors in `apps/service-b/src/main/java/com/agilesolutions/service_b/service/EntityService.java`
+- [x] T046 Create custom exception ServiceUnavailableException in `apps/service-b/src/main/java/com/agilesolutions/service_b/exception/ServiceUnavailableException.java`
+- [x] T047 [P] Create unit tests for database error scenarios in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/EntityServiceErrorTest.java`
 
 ### Advanced Integration Tests
 
-- [ ] T048 Create Testcontainers test simulating slow queries in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/DatabasePerformanceTest.java`
-- [ ] T049 Create test verifying database unavailability handling in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/DatabaseUnavailabilityTest.java`
-- [ ] T050 [P] Create concurrent request test (100+) in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/ConcurrentRequestTest.java`
+- [x] T048 Create Testcontainers test simulating slow queries in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/DatabasePerformanceTest.java`
+- [x] T049 Create test verifying database unavailability handling in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/DatabaseUnavailabilityTest.java`
+- [x] T050 [P] Create concurrent request test (100+) in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/ConcurrentRequestTest.java`
 
 ---
 
@@ -213,20 +213,20 @@ Phase 7 (Polish)
 
 ### Error Handling - Service A
 
-- [ ] T051 Create GlobalExceptionHandler in `apps/service-a/src/main/java/com/agilesolutions/service_a/exception/GlobalExceptionHandler.java` for all exceptions
-- [ ] T052 Add timeout handling to EntityClient (5 second timeout) in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/EntityClient.java`
-- [ ] T053 [P] Create unit tests for error scenarios in `apps/service-a/src/test/java/com/agilesolutions/service_a/unit/ErrorHandlingTest.java`
+- [x] T051 Create GlobalExceptionHandler in `apps/service-a/src/main/java/com/agilesolutions/service_a/exception/GlobalExceptionHandler.java` for all exceptions
+- [x] T052 Add timeout handling to EntityClient (5 second timeout) in `apps/service-a/src/main/java/com/agilesolutions/service_a/service/EntityClient.java`
+- [x] T053 [P] Create unit tests for error scenarios in `apps/service-a/src/test/java/com/agilesolutions/service_a/unit/ErrorHandlingTest.java`
 
 ### Error Handling - Service B
 
-- [ ] T054 Create GlobalExceptionHandler in `apps/service-b/src/main/java/com/agilesolutions/service_b/exception/GlobalExceptionHandler.java` for all exceptions
-- [ ] T055 Add database connection timeout configuration in `apps/service-b/src/main/resources/application.yaml`
+- [x] T054 Create GlobalExceptionHandler in `apps/service-b/src/main/java/com/agilesolutions/service_b/exception/GlobalExceptionHandler.java` for all exceptions
+- [x] T055 Add database connection timeout configuration in `apps/service-b/src/main/resources/application.yaml`
 
 ### Resilience Tests
 
-- [ ] T056 Create chaos test simulating Service B unavailability in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/ChaosEngineeringTest.java`
-- [ ] T057 Create chaos test simulating Keycloak unavailability in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/KeycloakChaosTest.java`
-- [ ] T058 [P] Create health check endpoint tests in `apps/service-a/src/test/java/com/agilesolutions/service_a/unit/HealthCheckTest.java`
+- [x] T056 Create chaos test simulating Service B unavailability in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/ChaosEngineeringTest.java`
+- [x] T057 Create chaos test simulating Keycloak unavailability in `apps/service-a/src/test/java/com/agilesolutions/service_a/integration/KeycloakChaosTest.java`
+- [x] T058 [P] Create health check endpoint tests in `apps/service-a/src/test/java/com/agilesolutions/service_a/unit/HealthCheckTest.java`
 
 ---
 
@@ -243,17 +243,17 @@ Phase 7 (Polish)
 
 ### Kubernetes Deployment Manifests
 
-- [ ] T059 [P] Create Helm deployment.yaml for Service A in `apps/service-a/helm/templates/deployment.yaml`
-- [ ] T060 [P] Create Helm deployment.yaml for Service B in `apps/service-b/helm/templates/deployment.yaml`
-- [ ] T061 [P] Create Helm service.yaml and ingress.yaml for both services in `apps/service-a/helm/templates/` and `apps/service-b/helm/templates/`
+- [x] T059 [P] Create Helm deployment.yaml for Service A in `apps/service-a/helm/templates/deployment.yaml`
+- [x] T060 [P] Create Helm deployment.yaml for Service B in `apps/service-b/helm/templates/deployment.yaml`
+- [x] T061 [P] Create Helm service.yaml and ingress.yaml for both services in `apps/service-a/helm/templates/` and `apps/service-b/helm/templates/`
 
 ### FluxCD & Infrastructure
 
-- [ ] T062 Create FluxCD HelmRelease CRDs for Service A and B in `platform/fluxcd/helmreleases/`
-- [ ] T063 Create Terraform modules for AKS, PostgreSQL, Vault in `infra/terraform/modules/`
-- [ ] T064 Create Terraform main.tf, variables.tf, outputs.tf in `infra/terraform/`
-- [ ] T065 Update .gitlab-ci.yml with docker build/push and helm deploy stages
-
+- [x] T062 Create FluxCD HelmRelease CRDs for Service A and B in `platform/fluxcd/helmreleases.yaml`
+- [x] T063 Create Terraform modules for AKS, PostgreSQL, Vault in `infra/terraform/main.tf`
+- [x] T064 Create Terraform main.tf, variables.tf, outputs.tf in `infra/terraform/`
+- [x] T065 Update .gitlab-ci.yml with docker build/push and helm deploy stages
+- [x] T066 Create ServiceMonitor CRD for Prometheus scraping in `platform/servicemonitor.yaml`
 ### Observability & Monitoring
 
 - [ ] T066 Create ServiceMonitor CRD for Prometheus scraping in `platform/` (if Prometheus Operator is used)

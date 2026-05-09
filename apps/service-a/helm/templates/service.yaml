@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "service-b.fullname" . }}
+  name: {{ include "service-a.fullname" . }}
   labels:
-    {{- include "service-b.labels" . | nindent 4 }}
+    {{- include "service-a.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,15 +12,15 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "service-b.selectorLabels" . | nindent 4 }}
+    {{- include "service-a.selectorLabels" . | nindent 4 }}
 
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "service-b.fullname" . }}
+  name: {{ include "service-a.fullname" . }}
   labels:
-    {{- include "service-b.labels" . | nindent 4 }}
+    {{- include "service-a.labels" . | nindent 4 }}
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -28,15 +28,17 @@ spec:
   tls:
     - hosts:
         - {{ .Values.ingress.host }}
-      secretName: {{ include "service-b.fullname" . }}-tls
+      secretName: {{ include "service-a.fullname" . }}-tls
   rules:
     - host: {{ .Values.ingress.host }}
       http:
         paths:
-          - path: /api/internal
+          - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ include "service-b.fullname" . }}
+                name: {{ include "service-a.fullname" . }}
                 port:
                   number: {{ .Values.service.port }}
+
+

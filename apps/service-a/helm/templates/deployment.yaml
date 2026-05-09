@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "service-b.fullname" . }}
+  name: {{ include "service-a.fullname" . }}
   labels:
-    {{- include "service-b.labels" . | nindent 4 }}
+    {{- include "service-a.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "service-b.selectorLabels" . | nindent 6 }}
+      {{- include "service-a.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -17,9 +17,9 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/actuator/prometheus"
       labels:
-        {{- include "service-b.selectorLabels" . | nindent 8 }}
+        {{- include "service-a.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "service-b.serviceAccountName" . }}
+      serviceAccountName: {{ include "service-a.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -64,21 +64,29 @@ spec:
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: {{ include "service-b.fullname" . }}-db
+              name: {{ include "service-a.fullname" . }}-db
               key: username
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ include "service-b.fullname" . }}-db
+              name: {{ include "service-a.fullname" . }}-db
               key: password
-        - name: DB_POOL_SIZE
-          value: "{{ .Values.database.poolSize }}"
-        - name: DB_CONNECTION_TIMEOUT
-          value: "{{ .Values.database.connectionTimeout }}"
+        - name: SERVICE_B_BASE_URL
+          value: "{{ .Values.serviceBUrl }}"
         - name: OAUTH2_ISSUER_URI
           value: "{{ .Values.keycloak.issuerUri }}"
         - name: OAUTH2_JWK_SET_URI
           value: "{{ .Values.keycloak.jwkSetUri }}"
+        - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "service-a.fullname" . }}-oauth
+              key: client-id
+        - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "service-a.fullname" . }}-oauth
+              key: client-secret
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "{{ .Values.observability.otlpEndpoint }}"
         - name: TRACING_SAMPLE_PROBABILITY
@@ -95,3 +103,5 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
+

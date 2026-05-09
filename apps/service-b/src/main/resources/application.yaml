@@ -7,7 +7,7 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:info}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:info}?socketTimeout=${DB_SOCKET_TIMEOUT:10}&statement_timeout=${DB_STATEMENT_TIMEOUT:30000}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
     hikari:
@@ -16,6 +16,8 @@ spring:
       connection-timeout: ${DB_CONNECTION_TIMEOUT:20000}
       idle-timeout: ${DB_IDLE_TIMEOUT:600000}
       max-lifetime: ${DB_MAX_LIFETIME:1800000}
+      leak-detection-threshold: ${DB_LEAK_DETECTION:60000}
+      auto-commit: false
 
   jpa:
     database: POSTGRESQL
