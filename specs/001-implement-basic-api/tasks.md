@@ -254,9 +254,6 @@ Phase 7 (Polish)
 - [x] T064 Create Terraform main.tf, variables.tf, outputs.tf in `infra/terraform/`
 - [x] T065 Update .gitlab-ci.yml with docker build/push and helm deploy stages
 - [x] T066 Create ServiceMonitor CRD for Prometheus scraping in `platform/servicemonitor.yaml`
-### Observability & Monitoring
-
-- [ ] T066 Create ServiceMonitor CRD for Prometheus scraping in `platform/` (if Prometheus Operator is used)
 
 ---
 
