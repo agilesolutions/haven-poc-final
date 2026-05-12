@@ -4,17 +4,14 @@ import com.agilesolutions.service_a.model.EntityInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
@@ -24,6 +21,8 @@ import java.util.UUID;
  * 
  * Handles OAuth2 Client Credentials flow for service-to-service authentication
  * and retrieves entity information from Service B.
+ *
+ * Uses the modern RestClient API (Spring Boot 4.x) instead of legacy RestTemplate.
  */
 @Component
 @RequiredArgsConstructor
@@ -39,7 +38,7 @@ public class EntityClient {
     @Value("${service.b.max-retries:3}")
     private int maxRetries;
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final OAuth2AuthorizedClientManager authorizedClientManager;
 
     /**
@@ -87,21 +86,39 @@ public class EntityClient {
                 log.debug("Attempt {}/{} to fetch from Service B: {}", attempt, maxRetries, url);
                 
                 String token = getOAuth2Token();
-                HttpHeaders headers = createHeaders(token);
-                HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-                
-                ResponseEntity<EntityInfo> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.GET,
-                        requestEntity,
-                        EntityInfo.class
-                );
-                
-                if (response.getStatusCode().is2xxSuccessful()) {
-                    log.debug("Successfully fetched entity info for: {}", identifier);
-                    return response.getBody();
-                }
-                
+
+                EntityInfo response = restClient.get()
+                        .uri(url)
+                        .header("Authorization", "Bearer " + token)
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .header("User-Agent", "Service-A/1.0.0")
+                        .retrieve()
+                        .onStatus(status -> status.value() == 404,
+                            (request, response2) -> {
+                                log.warn("Entity not found in Service B for: {}", identifier);
+                                throw HttpClientErrorException.create(
+                                        response2.getStatusCode(),
+                                        "Entity not found",
+                                        response2.getHeaders(),
+                                        new byte[0],
+                                        null);
+                            })
+                        .onStatus(status -> status.is5xxServerError(),
+                            (request, response2) -> {
+                                log.warn("Service B server error: {}", response2.getStatusCode());
+                                throw HttpClientErrorException.create(
+                                        response2.getStatusCode(),
+                                        "Service B error",
+                                        response2.getHeaders(),
+                                        new byte[0],
+                                        null);
+                            })
+                        .body(EntityInfo.class);
+
+                log.debug("Successfully fetched entity info for: {}", identifier);
+                return response;
+
             } catch (HttpClientErrorException.NotFound e) {
                 log.warn("Entity not found in Service B for: {}", identifier);
                 throw e;
@@ -172,20 +189,4 @@ public class EntityClient {
             throw new RuntimeException("Failed to obtain OAuth2 token", e);
         }
     }
-
-    /**
-     * Create HTTP headers with OAuth2 bearer token
-     * 
-     * @param token the OAuth2 access token
-     * @return HttpHeaders with Authorization header
-     */
-    private HttpHeaders createHeaders(String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        headers.set("Content-Type", "application/json");
-        headers.set("Accept", "application/json");
-        headers.set("User-Agent", "Service-A/1.0.0");
-        return headers;
-    }
 }
-

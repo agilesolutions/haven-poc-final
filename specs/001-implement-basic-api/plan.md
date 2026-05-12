@@ -1,25 +1,25 @@
-# Implementation Plan: Service Integration with OIDC Protection
+# Implementation Plan: Service Integration with OIDC Protection + RestClient Migration
 
-**Branch**: `001-implement-basic-services` | **Date**: May 5, 2026 | **Spec**: specs/001-implement-basic-api/spec.md
+**Branch**: `002-spring-boot-v4` | **Date**: May 12, 2026 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-implement-basic-api/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Note**: This plan covers the primary feature (Service Integration with OIDC) and the RestClient migration enhancement.
 
 ## Summary
 
-Implement two Spring Boot microservices (Service A and Service B) with OIDC-protected service-to-service communication using Keycloak. Service A exposes a REST API endpoint that retrieves entity information from Service B, which queries a PostgreSQL database. Include unit tests, Testcontainers integration tests, Helm charts, GitLab CI/CD pipelines, FluxCD manifests, and Terraform for AKS infrastructure.
+Implement two microservices (Service A and Service B) with OIDC-protected inter-service communication. Service A exposes a REST API endpoint that retrieves entity information from Service B, which queries PostgreSQL. Service-to-service authentication uses OAuth2 Client Credentials Flow with Keycloak. This implementation also replaces legacy RestTemplate with modern RestClient (Spring Boot 4.x) and implements comprehensive testing with RestTestClient.
 
 ## Technical Context
 
-**Language/Version**: Java 25 with Spring Boot 4  
-**Primary Dependencies**: Spring Boot 4, Spring Security, Spring Data JPA, Spring Web, OpenTelemetry, Micrometer, Testcontainers  
-**Storage**: PostgreSQL 15+  
-**Testing**: JUnit 5, Testcontainers (PostgreSQL, Keycloak)  
-**Target Platform**: Kubernetes (AKS)  
-**Project Type**: web-service (microservices)  
-**Performance Goals**: 1 second end-to-end latency for entity retrieval  
-**Constraints**: <1 second p95 latency, 100% success rate for healthy services, 100+ concurrent requests  
-**Scale/Scope**: 100+ concurrent requests, two services, PostgreSQL database  
+**Language/Version**: Java 25 (LTS-aligned)  
+**Primary Dependencies**: Spring Boot 4.x, RestClient (spring-web), RestTestClient (spring-boot-test), Keycloak 24+, PostgreSQL 15+  
+**Storage**: PostgreSQL 15+ (entity table with name, description, version fields)  
+**Testing**: Spring Test, RestTestClient, TestContainers (PostgreSQL, Keycloak stub)  
+**Target Platform**: Kubernetes 1.26+ (AKS/EKS/on-premise)  
+**Project Type**: Microservices (two independently deployable Java/Spring Boot services)  
+**Performance Goals**: Sub-second end-to-end response time (<1000ms); 100+ concurrent request handling  
+**Constraints**: <500ms authentication latency; stateless services; 30-second graceful shutdown  
+**Scale/Scope**: Two services, PostgreSQL persistence, OIDC authentication, observability stack integration (Prometheus, Loki, Tempo), RestClient-based HTTP client
 
 ## Constitution Check
 
@@ -38,6 +38,8 @@ Implement two Spring Boot microservices (Service A and Service B) with OIDC-prot
 - [x] **Database**: PostgreSQL schema migrations (Flyway/Liquibase) versioned in Git; no manual DDL
 - [x] **Compliance**: 15-factor checklist completed (codebase, dependencies, config, backing services, build/release/run, processes, port binding, concurrency, disposability, dev/prod parity, logs, admin tasks, monitoring, persistence, graceful shutdown)
 
+✅ **All Constitution gates PASS**. Feature spec complies with Haven POC principles.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -49,6 +51,8 @@ specs/001-implement-basic-api/
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
+│   ├── service-a-api.yaml
+│   └── service-b-api.yaml
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -56,98 +60,47 @@ specs/001-implement-basic-api/
 
 ```text
 apps/
-├── service-a/
-│   ├── build.gradle
-│   ├── Dockerfile
-│   ├── helm/
-│   │   ├── Chart.yaml
-│   │   ├── values.yaml
-│   │   └── templates/
-│   │       ├── deployment.yaml
-│   │       ├── service.yaml
-│   │       ├── ingress.yaml
-│   │       └── configmap.yaml
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   │   └── com/
-│   │   │   │       └── agilesolutions/
-│   │   │   │           └── service_a/
-│   │   │   │               ├── config/
-│   │   │   │               ├── controller/
-│   │   │   │               ├── service/
-│   │   │   │               └── model/
-│   │   │   └── resources/
-│   │   │       ├── application.yaml
-│   │   │       └── db/migration/
-│   │   └── test/
-│   │       ├── java/
-│   │       │   └── com/
-│   │       │       └── agilesolutions/
-│   │       │           └── service_a/
-│   │       │               ├── unit/
-│   │       │               └── integration/
-│   │       └── resources/
-│   └── settings.gradle
-├── service-b/
-│   ├── build.gradle
-│   ├── Dockerfile
-│   ├── helm/
-│   │   ├── Chart.yaml
-│   │   ├── values.yaml
-│   │   └── templates/
-│   │       ├── deployment.yaml
-│   │       ├── service.yaml
-│   │       ├── ingress.yaml
-│   │       └── configmap.yaml
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   │   └── com/
-│   │   │   │       └── agilesolutions/
-│   │   │   │           └── service_b/
-│   │   │   │               ├── config/
-│   │   │   │               ├── controller/
-│   │   │   │               ├── service/
-│   │   │   │               ├── repository/
-│   │   │   │               └── model/
-│   │   │   └── resources/
-│   │   │       ├── application.yaml
-│   │   │       ├── logback-spring.xml
-│   │   │       └── db/migration/
-│   │   └── test/
-│   │       ├── java/
-│   │       │   └── com/
-│   │       │       └── agilesolutions/
-│   │       │           └── service_b/
-│   │       │               ├── unit/
-│   │       │               └── integration/
-│   │       └── resources/
-│   └── settings.gradle
-infra/
-├── terraform/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── modules/
-│       ├── aks/
-│       ├── postgresql/
-│       ├── vault/
-│       └── rbac/
-platform/
-├── fluxcd/
-│   ├── helmreleases/
-│   │   ├── service-a-helmrelease.yaml
-│   │   ├── service-b-helmrelease.yaml
-│   │   ├── keycloak-helmrelease.yaml
-│   │   ├── nginx-helmrelease.yaml
-│   │   └── postgresql-helmrelease.yaml
-│   └── kustomization.yaml
-.gitlab-ci.yml
+├── service-a/                          # Gateway service: REST API → Service B
+│   ├── src/main/java/com/...
+│   │   ├── controller/                 # REST endpoints
+│   │   ├── client/                     # RestClient for Service B calls
+│   │   ├── security/                   # OIDC/Keycloak integration
+│   │   └── config/                     # RestClient configuration
+│   ├── src/test/java/com/...
+│   │   ├── integration/                # IntegrationTest with RestTestClient
+│   │   ├── client/                     # RestClient tests
+│   │   └── security/                   # Security tests
+│   ├── build.gradle                    # Dependencies: spring-web (RestClient), spring-security-oauth2
+│   ├── Dockerfile                      # Multi-stage production build
+│   └── helm/                           # Kubernetes Helm templates
+│       ├── values.yaml
+│       └── templates/
+│
+└── service-b/                          # Data service: PostgreSQL queries
+    ├── src/main/java/com/...
+    │   ├── controller/                 # REST endpoints
+    │   ├── repository/                 # JPA/SQL data access
+    │   ├── model/                      # Entity classes
+    │   ├── security/                   # JWT validation
+    │   └── config/                     # Database/security config
+    ├── src/test/java/com/...
+    │   ├── integration/                # IntegrationTest with TestContainers
+    │   ├── repository/                 # Repository tests
+    │   └── security/                   # JWT validation tests
+    ├── build.gradle                    # Dependencies: spring-data-jpa, postgresql, spring-security-oauth2
+    ├── Dockerfile                      # Multi-stage production build
+    └── helm/                           # Kubernetes Helm templates
+        ├── values.yaml
+        └── templates/
 ```
 
-**Structure Decision**: Multi-service microservices architecture with separate apps for Service A and Service B, infrastructure as code with Terraform, GitOps with FluxCD, and CI/CD with GitLab.
+**Structure Decision**: Multi-service Gradle project. Service A is a REST gateway with RestClient for outbound calls; Service B is a data service with JPA repository. Both services independently deployable via separate Helm charts.
 
 ## Complexity Tracking
 
-No violations.
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
