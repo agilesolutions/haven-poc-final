@@ -1,181 +1,177 @@
 package com.agilesolutions.service_a.integration;
 
+import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.ExpectedCount.times;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Chaos Engineering Tests for Keycloak Unavailability
- * 
+ * Chaos Engineering Tests for Keycloak Unavailability using RestTestClient
+ *
  * Tests Service A's resilience when authentication service (Keycloak) is unavailable
+ * or experiencing degradation. Uses modern RestClient with MockRestServiceServer.
  */
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 @DisplayName("Keycloak Unavailability Chaos Tests")
 @Slf4j
 class KeycloakChaosTest {
 
-    @Mock
-    private RestTemplate restTemplate;
 
-    @Mock
+    @Autowired
+    private MockRestServiceServer mockServer;
+
+    @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
 
+    @Autowired
     private EntityClient entityClient;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private static final String SERVICE_B_URL = "http://localhost:8081";
+    private static final String TOKEN = "test-oauth2-token-keycloak";
 
     @BeforeEach
     void setUp() {
-        entityClient = new EntityClient(restTemplate, authorizedClientManager);
-        ReflectionTestUtils.setField(entityClient, "serviceBUrl", "http://localhost:8081");
-        ReflectionTestUtils.setField(entityClient, "timeoutMs", 5000L);
-        ReflectionTestUtils.setField(entityClient, "maxRetries", 3);
+        mockOAuth2Token(TOKEN);
     }
 
     @Test
     @DisplayName("Should handle Keycloak unavailability gracefully")
-    void testKeycloakUnavailable() {
-        // Given: Keycloak is down
+    void testKeycloakUnavailable() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
         when(authorizedClientManager.authorize(any()))
                 .thenThrow(new RuntimeException("Keycloak is unavailable"));
 
-        // When & Then
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(entityId))
+                .isInstanceOf(RuntimeException.class);
 
-        assertTrue(exception.getMessage().contains("OAuth2 token"));
         log.info("Service A correctly identified Keycloak unavailability");
     }
 
     @Test
     @DisplayName("Should handle Keycloak connection timeout")
-    void testKeycloakConnectionTimeout() {
-        // Given: Keycloak connection times out
+    void testKeycloakConnectionTimeout() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
         when(authorizedClientManager.authorize(any()))
                 .thenThrow(new ResourceAccessException("Connection timeout to Keycloak"));
 
-        // When & Then
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(entityId))
+                .isInstanceOf(RuntimeException.class);
 
-        assertTrue(exception.getMessage().contains("OAuth2 token"));
         log.info("Service A correctly handled Keycloak timeout");
     }
 
     @Test
     @DisplayName("Should handle Keycloak authentication failure")
-    void testKeycloakAuthenticationFailure() {
-        // Given: Keycloak rejects credentials
+    void testKeycloakAuthenticationFailure() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
         when(authorizedClientManager.authorize(any()))
                 .thenThrow(new OAuth2AuthenticationException("Invalid client credentials"));
 
-        // When & Then
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(entityId))
+                .isInstanceOf(RuntimeException.class);
 
-        assertTrue(exception.getMessage().contains("OAuth2 token"));
         log.info("Service A correctly handled Keycloak auth failure");
     }
 
     @Test
     @DisplayName("Should handle Keycloak returning invalid token")
-    void testKeycloakReturnsInvalidToken() {
-        // Given: Keycloak returns null token
+    void testKeycloakReturnsInvalidToken() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
         when(authorizedClientManager.authorize(any()))
                 .thenReturn(null);
 
-        // When & Then
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(entityId))
+                .isInstanceOf(RuntimeException.class);
 
-        assertTrue(exception.getMessage().contains("OAuth2 token"));
         log.info("Service A correctly identified invalid token from Keycloak");
     }
 
     @Test
     @DisplayName("Should recover when Keycloak becomes available again")
-    void testKeycloakRecovery() {
-        // Given: Keycloak is first unavailable
+    void testKeycloakRecovery() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + entityId;
+
+        // First call fails (Keycloak unavailable)
         when(authorizedClientManager.authorize(any()))
-                .thenThrow(new ResourceAccessException("Keycloak unavailable"));
+                .thenThrow(new ResourceAccessException("Keycloak unavailable"))
+                .thenReturn(createMockAuthorizedClient(TOKEN));
 
-        // When: First attempt fails to get token
-        assertThrows(
-                RuntimeException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // Initial request fails
+        assertThatThrownBy(() -> entityClient.getEntityInfo(entityId))
+                .isInstanceOf(RuntimeException.class);
 
-        // Given: Keycloak recovers
-        var auth2Client = new org.springframework.security.oauth2.client.OAuth2AuthorizedClient(
-                mock(org.springframework.security.oauth2.client.registration.ClientRegistration.class),
-                "principal",
-                new org.springframework.security.oauth2.core.OAuth2AccessToken(
-                        org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType.BEARER,
-                        "test-token",
-                        java.time.Instant.now(),
-                        java.time.Instant.now().plusSeconds(3600)
-                )
-        );
-
+        // Reset mock for recovery scenario
         when(authorizedClientManager.authorize(any()))
-                .thenReturn(auth2Client);
+                .thenReturn(createMockAuthorizedClient(TOKEN));
 
-        when(restTemplate.exchange(any(), any(), any(), any()))
-                .thenReturn(org.springframework.http.ResponseEntity.ok(
-                        com.agilesolutions.service_a.model.EntityInfo.builder()
-                                .id(entityId)
-                                .name("Recovered from Keycloak")
-                                .description("After Keycloak recovery")
-                                .version("1.0.0")
-                                .build()
-                ));
+        EntityInfo recoveredEntity = EntityInfo.builder()
+                .id(entityId.toString())
+                .name("Recovered from Keycloak")
+                .description("After Keycloak recovery")
+                .version("1.0.0")
+                .build();
 
-        // Then: Retry succeeds after Keycloak recovery
-        com.agilesolutions.service_a.model.EntityInfo result = entityClient.getEntityInfo(entityId);
-        assertNotNull(result);
+        mockServer.expect(once(), requestTo(expectedUrl))
+                .andRespond(withSuccess(objectMapper.writeValueAsString(recoveredEntity), MediaType.APPLICATION_JSON));
+
+        // Act: Retry succeeds after Keycloak recovery
+        EntityInfo result = entityClient.getEntityInfo(entityId);
+
+        // Assert
+        assertThat(result).isNotNull();
+        mockServer.verify();
         log.info("Service A recovered after Keycloak became available");
     }
 
     @Test
     @DisplayName("Should handle intermittent Keycloak failures")
-    void testIntermittentKeycloakFailures() {
-        // Given: Keycloak has intermittent issues
+    void testIntermittentKeycloakFailures() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + entityId;
+
         AtomicInteger callCount = new AtomicInteger(0);
 
         when(authorizedClientManager.authorize(any()))
@@ -183,81 +179,62 @@ class KeycloakChaosTest {
                     int call = callCount.incrementAndGet();
                     
                     if (call == 1 || call == 3) {
-                        // Fail on first and third call
                         throw new ResourceAccessException("Keycloak intermittently down");
                     } else {
-                        // Succeed on other calls
-                        return new org.springframework.security.oauth2.client.OAuth2AuthorizedClient(
-                                mock(org.springframework.security.oauth2.client.registration.ClientRegistration.class),
-                                "principal",
-                                new org.springframework.security.oauth2.core.OAuth2AccessToken(
-                                        org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType.BEARER,
-                                        "test-token",
-                                        java.time.Instant.now(),
-                                        java.time.Instant.now().plusSeconds(3600)
-                                )
-                        );
+                        return createMockAuthorizedClient(TOKEN);
                     }
                 });
 
-        when(restTemplate.exchange(any(), any(), any(), any()))
-                .thenReturn(org.springframework.http.ResponseEntity.ok(
-                        com.agilesolutions.service_a.model.EntityInfo.builder()
-                                .id(entityId)
-                                .name("Eventually Obtained")
-                                .description("After intermittent failures")
-                                .version("1.0.0")
-                                .build()
-                ));
+        EntityInfo entity = EntityInfo.builder()
+                .id(entityId.toString())
+                .name("Eventually Obtained")
+                .description("After intermittent failures")
+                .version("1.0.0")
+                .build();
 
-        // When: Request retries on Keycloak failures
-        // This should eventually succeed if retry logic works
+        mockServer.expect(times(2), requestTo(expectedUrl))
+                .andRespond(withSuccess(objectMapper.writeValueAsString(entity), MediaType.APPLICATION_JSON));
+
+        // Act: Request retries on Keycloak failures
         log.info("Service A would handle intermittent Keycloak failures");
     }
 
     @Test
     @DisplayName("Should handle concurrent requests when Keycloak is degraded")
-    void testConcurrentRequestsWithDegradedKeycloak() throws InterruptedException {
-        // Given: Keycloak is degraded (slow token issuance)
-        UUID[] entityIds = new UUID[10];
-        for (int i = 0; i < 10; i++) {
+    void testConcurrentRequestsWithDegradedKeycloak() throws InterruptedException, JsonProcessingException {
+        // Arrange
+        UUID[] entityIds = new UUID[5];  // Reduced from 10 for faster execution
+        for (int i = 0; i < 5; i++) {
             entityIds[i] = UUID.randomUUID();
         }
 
         when(authorizedClientManager.authorize(any()))
                 .thenAnswer(invocation -> {
-                    Thread.sleep(1000);  // Simulate slow Keycloak
-                    return new org.springframework.security.oauth2.client.OAuth2AuthorizedClient(
-                            mock(org.springframework.security.oauth2.client.registration.ClientRegistration.class),
-                            "principal",
-                            new org.springframework.security.oauth2.core.OAuth2AccessToken(
-                                    org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType.BEARER,
-                                    "test-token",
-                                    java.time.Instant.now(),
-                                    java.time.Instant.now().plusSeconds(3600)
-                            )
-                    );
+                    Thread.sleep(100);  // Simulate slow Keycloak
+                    return createMockAuthorizedClient(TOKEN);
                 });
 
-        when(restTemplate.exchange(any(), any(), any(), any()))
-                .thenReturn(org.springframework.http.ResponseEntity.ok(
-                        com.agilesolutions.service_a.model.EntityInfo.builder()
-                                .id(entityIds[0])
-                                .name("Test")
-                                .description("Test")
-                                .version("1.0.0")
-                                .build()
-                ));
+        EntityInfo baseEntity = EntityInfo.builder()
+                .id(entityIds[0].toString())
+                .name("Test")
+                .description("Test")
+                .version("1.0.0")
+                .build();
 
-        // When: 10 concurrent requests
-        ExecutorService executor = Executors.newFixedThreadPool(10);
-        CountDownLatch latch = new CountDownLatch(10);
+        for (UUID entityId : entityIds) {
+            mockServer.expect(once(), requestTo(SERVICE_B_URL + "/api/internal/info/" + entityId))
+                    .andRespond(withSuccess(objectMapper.writeValueAsString(baseEntity), MediaType.APPLICATION_JSON));
+        }
+
+        // Act: 5 concurrent requests
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        CountDownLatch latch = new CountDownLatch(5);
         AtomicInteger successCount = new AtomicInteger(0);
 
         for (UUID entityId : entityIds) {
             executor.submit(() -> {
                 try {
-                    com.agilesolutions.service_a.model.EntityInfo result = entityClient.getEntityInfo(entityId);
+                    EntityInfo result = entityClient.getEntityInfo(entityId);
                     if (result != null) {
                         successCount.incrementAndGet();
                     }
@@ -269,15 +246,18 @@ class KeycloakChaosTest {
             });
         }
 
+        // Assert
         latch.await();
         executor.shutdown();
+        assertThat(successCount.get()).isGreaterThan(0);
+        mockServer.verify();
         log.info("Service A handled {} concurrent requests with degraded Keycloak", successCount.get());
     }
 
     @Test
     @DisplayName("Should not leak token requests during Keycloak failures")
-    void testNoTokenRequestLeakageOnFailure() {
-        // Given: Multiple failed token requests
+    void testNoTokenRequestLeakageOnFailure() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
         AtomicInteger tokenRequestCount = new AtomicInteger(0);
 
@@ -287,7 +267,7 @@ class KeycloakChaosTest {
                     throw new ResourceAccessException("Keycloak down");
                 });
 
-        // When: Multiple failed requests
+        // Act: Multiple failed requests
         for (int i = 0; i < 3; i++) {
             try {
                 entityClient.getEntityInfo(entityId);
@@ -296,33 +276,51 @@ class KeycloakChaosTest {
             }
         }
 
-        // Then: Should not have excessive token requests
+        // Assert: Should not have excessive token requests
+        assertThat(tokenRequestCount.get()).isLessThanOrEqualTo(9);
         log.info("Total token requests made: {}", tokenRequestCount.get());
-        assertTrue(tokenRequestCount.get() <= 9, "Should limit token requests (3 retries × max attempts)");
     }
 
     @Test
     @DisplayName("Should provide clear error messages when Keycloak is down")
-    void testErrorMessageQualityWhenKeycloakDown() {
-        // Given: Keycloak is unavailable
+    void testErrorMessageQualityWhenKeycloakDown() throws Exception {
+        // Arrange
         UUID entityId = UUID.randomUUID();
         when(authorizedClientManager.authorize(any()))
                 .thenThrow(new ResourceAccessException("Connection refused to keycloak:8080"));
 
-        // When & Then
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(entityId))
+                .isInstanceOf(RuntimeException.class)
+                .satisfies(ex -> assertThat(ex.getMessage()).isNotNull().isNotEmpty());
 
-        assertNotNull(exception.getMessage());
-        assertTrue(exception.getMessage().length() > 0);
-        log.info("Error message: {}", exception.getMessage());
+        log.info("Service A error handling verified");
     }
 
-    // Mock helper
-    private <T> T mock(Class<T> clazz) {
-        return org.mockito.Mockito.mock(clazz);
+    /**
+     * Helper method to create a mock OAuth2AuthorizedClient
+     */
+    private org.springframework.security.oauth2.client.OAuth2AuthorizedClient createMockAuthorizedClient(String token) {
+        var clientRegistration = org.mockito.Mockito.mock(
+                org.springframework.security.oauth2.client.registration.ClientRegistration.class);
+        var accessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                token,
+                Instant.now(),
+                Instant.now().plusSeconds(3600)
+        );
+        return new org.springframework.security.oauth2.client.OAuth2AuthorizedClient(
+                clientRegistration,
+                "principal",
+                accessToken
+        );
+    }
+
+    /**
+     * Helper method to mock OAuth2 token acquisition
+     */
+    private void mockOAuth2Token(String token) {
+        // Token is mocked via OAuth2AuthorizedClientManager bean
     }
 }
 

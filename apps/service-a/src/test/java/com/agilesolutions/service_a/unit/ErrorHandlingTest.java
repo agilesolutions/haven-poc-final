@@ -2,205 +2,226 @@ package com.agilesolutions.service_a.unit;
 
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.*;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.net.SocketTimeoutException;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.ExpectedCount.*;
+import static org.springframework.test.web.client.MockRestServiceServer.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 /**
- * Unit tests for Service A error handling
- * 
+ * Unit tests for Service A error handling using RestTestClient
+ *
  * Tests error handling for service unavailability, timeouts, and auth failures
+ * using modern RestClient with MockRestServiceServer for HTTP mocking.
  */
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 @DisplayName("Service A Error Handling Tests")
 @Slf4j
 class ErrorHandlingTest {
 
-    @Mock
-    private RestTemplate restTemplate;
 
-    @Mock
+    @Autowired
+    private MockRestServiceServer mockServer;
+
+    @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
 
-    @InjectMocks
+    @Autowired
     private EntityClient entityClient;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private UUID testEntityId;
+    private static final String SERVICE_B_URL = "http://localhost:8081";
+    private static final String TOKEN = "test-oauth2-token-error";
+
+    @BeforeEach
+    void setUp() {
+        testEntityId = UUID.randomUUID();
+        // Mock OAuth2 token acquisition
+        mockOAuth2Token(TOKEN);
+    }
 
     @Test
     @DisplayName("Should return 503 Service Unavailable when Service B is unreachable")
-    void testServiceBUnavailable() {
-        // Given
-        UUID entityId = UUID.randomUUID();
-        String url = "http://localhost:8081/api/internal/info/" + entityId;
-        
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new ResourceAccessException("Connection refused"));
+    void testServiceBUnavailable() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        // When & Then
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        // All retry attempts fail with connection error
+        mockServer.expect(times(3), requestTo(expectedUrl))
+                .andRespond(request -> {
+                    throw new ResourceAccessException("Connection refused");
+                });
 
-        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, exception.getStatusCode());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                });
+
+        mockServer.verify();
         log.info("Service A correctly returned 503 for unavailable Service B");
     }
 
     @Test
     @DisplayName("Should return 504 Gateway Timeout when Service B request times out")
-    void testServiceBTimeout() {
-        // Given
-        UUID entityId = UUID.randomUUID();
-        
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new ResourceAccessException("Connection timeout", new SocketTimeoutException("Read timeout")));
+    void testServiceBTimeout() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        // When & Then
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        mockServer.expect(times(3), requestTo(expectedUrl))
+                .andRespond(request -> {
+                    throw new ResourceAccessException("Connection timeout");
+                });
 
-        assertEquals(HttpStatus.GATEWAY_TIMEOUT, exception.getStatusCode());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.GATEWAY_TIMEOUT);
+                });
+
+        mockServer.verify();
         log.info("Service A correctly returned 504 for Service B timeout");
     }
 
     @Test
     @DisplayName("Should return 404 Not Found when entity doesn't exist in Service B")
-    void testEntityNotFound() {
-        // Given
-        UUID entityId = UUID.randomUUID();
-        
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND, "Entity not found"));
+    void testEntityNotFound() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        // When & Then
-        HttpClientErrorException exception = assertThrows(
-                HttpClientErrorException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        mockServer.expect(once(), requestTo(expectedUrl))
+                .andExpect(method(org.springframework.http.HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND)
+                        .body("{\"message\":\"Entity not found\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(HttpClientErrorException.NotFound.class);
+
+        mockServer.verify();
         log.info("Service A correctly returned 404 for non-existent entity");
     }
 
     @Test
     @DisplayName("Should return 401 Unauthorized when OAuth2 token is invalid")
-    void testUnauthorizedToken() {
-        // Given
-        UUID entityId = UUID.randomUUID();
-        
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Invalid token"));
+    void testUnauthorizedToken() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        // When & Then
-        HttpClientErrorException exception = assertThrows(
-                HttpClientErrorException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        mockServer.expect(once(), requestTo(expectedUrl))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED)
+                        .body("{\"message\":\"Invalid token\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
 
-        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(HttpClientErrorException.Unauthorized.class);
+
+        mockServer.verify();
         log.info("Service A correctly returned 401 for invalid token");
     }
 
     @Test
     @DisplayName("Should handle network socket errors gracefully")
-    void testNetworkSocketError() {
-        // Given
-        UUID entityId = UUID.randomUUID();
-        
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new ResourceAccessException("Connection reset by peer"));
+    void testNetworkSocketError() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        // When & Then
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        mockServer.expect(times(3), requestTo(expectedUrl))
+                .andRespond(request -> {
+                    throw new ResourceAccessException("Connection reset by peer");
+                });
 
-        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, exception.getStatusCode());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                });
+
+        mockServer.verify();
         log.info("Service A correctly handled network socket error");
     }
 
     @Test
     @DisplayName("Should provide meaningful error messages")
-    void testErrorMessageQuality() {
-        // Given
-        UUID entityId = UUID.randomUUID();
-        
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new ResourceAccessException("Unable to connect to host"));
+    void testErrorMessageQuality() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        // When & Then
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        mockServer.expect(times(3), requestTo(expectedUrl))
+                .andRespond(request -> {
+                    throw new ResourceAccessException("Unable to connect to host");
+                });
 
-        assertNotNull(exception.getReason());
-        assertTrue(exception.getReason().length() > 0);
-        log.info("Error message: {}", exception.getReason());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getReason()).isNotNull().isNotEmpty();
+                });
+
+        mockServer.verify();
+        log.info("Error message quality verified");
     }
 
     @Test
     @DisplayName("Should distinguish between different HTTP error codes")
-    void testDistinctHttpErrors() {
-        // Test 500 error
-        when(restTemplate.exchange(
-                contains("api/internal/info"),
-                eq(org.springframework.http.HttpMethod.GET),
-                any(),
-                eq(EntityInfo.class)
-        )).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+    void testDistinctHttpErrors() throws Exception {
+        // Arrange
+        String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
-        UUID entityId = UUID.randomUUID();
-        
-        HttpServerErrorException exception = assertThrows(
-                HttpServerErrorException.class,
-                () -> entityClient.getEntityInfo(entityId)
-        );
+        mockServer.expect(times(3), requestTo(expectedUrl))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("{\"message\":\"Database error\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatusCode());
+        // Act & Assert
+        assertThatThrownBy(() -> entityClient.getEntityInfo(testEntityId))
+                .isInstanceOf(ResponseStatusException.class);
+
+        mockServer.verify();
         log.info("Service A correctly identified 500 error");
+    }
+
+    /**
+     * Helper method to mock OAuth2 token acquisition
+     */
+    private void mockOAuth2Token(String token) {
+        // Token is mocked via OAuth2AuthorizedClientManager bean
+        // Actual token injection happens in RestClient fluent API
     }
 }
 

@@ -209,7 +209,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(ex.getStatusCode().value())
-                .error(ex.getStatusCode().getReasonPhrase())
+                .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
                 .message(ex.getReason())
                 .traceId(UUID.randomUUID().toString())
                 .path(request.getDescription(false).replace("uri=", ""))

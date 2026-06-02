@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
+
 /**
  * OpenTelemetry Configuration for Service B
  * 
@@ -76,7 +78,7 @@ public class ObservabilityConfig {
         return SdkMeterProvider.builder()
                 .setResource(resource)
                 .registerMetricReader(PeriodicMetricReader.builder(metricExporter)
-                        .setIntervalMillis(60000) // Export metrics every 60 seconds
+                        .setInterval(Duration.ofMillis(60000)) // Export metrics every 60 seconds
                         .build())
                 .build();
     }

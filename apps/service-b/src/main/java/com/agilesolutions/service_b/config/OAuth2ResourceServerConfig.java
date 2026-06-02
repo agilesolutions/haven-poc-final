@@ -51,11 +51,11 @@ public class OAuth2ResourceServerConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.debug("Configuring OAuth2 Resource Server security filter chain");
-        
+
         http
                 // CORS configuration for service-to-service communication
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                
+
                 // Require authentication for all requests except health checks and actuator
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/health", "/health/live", "/health/ready").permitAll()
@@ -63,14 +63,14 @@ public class OAuth2ResourceServerConfig {
                         .requestMatchers("/api/internal/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                
+
                 // OAuth2 Resource Server with JWT validation
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(new CustomJwtAuthenticationConverter())
                         )
                 )
-                
+
                 // Session management
                 .sessionManagement(session -> session
                         .sessionFixation().migrateSession()
@@ -79,7 +79,7 @@ public class OAuth2ResourceServerConfig {
                                 .expiredUrl("/error")
                         )
                 )
-                
+
                 // Security headers
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
@@ -88,11 +88,11 @@ public class OAuth2ResourceServerConfig {
                                 "base-uri 'self'; " +
                                 "form-action 'self'"
                         ))
-                        .contentTypeOptions()
-                        .xssProtection()
-                        .cacheControl()
+                        .contentTypeOptions(contentTypeOptionsConfig -> {})
+                        .xssProtection(xXssConfig -> {})
+                        .cacheControl(cacheControlConfig -> {})
                 )
-                
+
                 // Exception handling
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint((request, response, authException) -> {
@@ -104,7 +104,7 @@ public class OAuth2ResourceServerConfig {
                             response.sendError(403, "Forbidden");
                         })
                 );
-        
+
         return http.build();
     }
 

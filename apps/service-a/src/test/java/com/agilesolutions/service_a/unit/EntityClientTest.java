@@ -7,27 +7,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.net.SocketTimeoutException;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.client.ExpectedCount.*;
-import static org.springframework.test.web.client.MockRestServiceServer.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.ExpectedCount.times;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
  * Unit tests for EntityClient using RestTestClient (Spring Boot 4.x)
@@ -39,6 +39,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * without needing actual HTTP servers.
  */
 @RestClientTest(EntityClient.class)
+@SpringBootTest
 @Slf4j
 @DisplayName("EntityClient Unit Tests with RestTestClient")
 class EntityClientTest {
@@ -49,7 +50,7 @@ class EntityClientTest {
     @Autowired
     private MockRestServiceServer mockServer;
 
-    @MockBean
+    @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
 
     @Autowired
@@ -66,6 +67,7 @@ class EntityClientTest {
     @BeforeEach
     void setUp() {
         testEntityId = UUID.randomUUID();
+        // given
         testEntity = EntityInfo.builder()
                 .id(testEntityId.toString())
                 .name("Test Entity")
@@ -83,6 +85,7 @@ class EntityClientTest {
         // Arrange
         String expectedUrl = SERVICE_B_URL + "/api/internal/info/" + testEntityId;
 
+        // when
         mockServer.expect(once(), requestTo(expectedUrl))
                 .andExpect(method(org.springframework.http.HttpMethod.GET))
                 .andExpect(header("Authorization", "Bearer " + TOKEN))
@@ -90,7 +93,7 @@ class EntityClientTest {
                 .andExpect(header("Accept", MediaType.APPLICATION_JSON_VALUE))
                 .andRespond(withSuccess(objectMapper.writeValueAsString(testEntity), MediaType.APPLICATION_JSON));
 
-        // Act
+        // then
         EntityInfo result = entityClient.getEntityInfo(testEntityId);
 
         // Assert

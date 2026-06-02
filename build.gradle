@@ -17,8 +17,10 @@ allprojects {
 subprojects {
     apply plugin: 'java'
 
-    sourceCompatibility = 25
-    targetCompatibility = 25
+    java {
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
+    }
 
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'

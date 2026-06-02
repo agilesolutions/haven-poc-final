@@ -76,7 +76,7 @@ public class ObservabilityConfig {
         return SdkMeterProvider.builder()
                 .setResource(resource)
                 .registerMetricReader(PeriodicMetricReader.builder(metricExporter)
-                        .setIntervalMillis(60000) // Export metrics every 60 seconds
+                        .setInterval(java.time.Duration.ofSeconds(60)) // Export metrics every 60 seconds
                         .build())
                 .build();
     }

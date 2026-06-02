@@ -1,6 +1,7 @@
 package com.agilesolutions.service_a.integration;
 
 import com.agilesolutions.service_a.controller.InfoController;
+import com.agilesolutions.service_a.exception.GlobalExceptionHandler;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
 import com.agilesolutions.service_a.service.InfoService;
@@ -9,11 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
@@ -21,10 +22,12 @@ import org.springframework.web.client.RestClientException;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.springframework.http.HttpStatus.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -33,9 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests the complete flow from external API call through Service A
  * to Service B, including error handling and retry logic.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@WebMvcTest(InfoController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ContextConfiguration(classes = {InfoController.class, GlobalExceptionHandler.class, InfoService.class})
 @DisplayName("Service A to Service B Integration Tests")
 class InfoControllerIntegrationTest {
 
@@ -45,7 +48,7 @@ class InfoControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private EntityClient entityClient;
 
     @Autowired

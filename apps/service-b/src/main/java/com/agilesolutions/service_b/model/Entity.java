@@ -15,7 +15,7 @@ import java.util.UUID;
  * This entity is retrieved by external callers through Service A
  * and returned with entity information (name, description, version).
  */
-@Entity
+@jakarta.persistence.Entity
 @Table(name = "entity", indexes = {
         @Index(name = "idx_entity_name", columnList = "name"),
         @Index(name = "idx_entity_active", columnList = "is_active"),
