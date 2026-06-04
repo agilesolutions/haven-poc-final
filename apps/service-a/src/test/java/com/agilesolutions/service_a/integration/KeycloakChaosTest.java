@@ -1,5 +1,7 @@
 package com.agilesolutions.service_a.integration;
 
+import com.agilesolutions.service_a.config.OAuth2ClientConfig;
+import com.agilesolutions.service_a.config.RestClientConfig;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,11 +11,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.ResourceAccessException;
@@ -40,17 +45,23 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * Tests Service A's resilience when authentication service (Keycloak) is unavailable
  * or experiencing degradation. Uses modern RestClient with MockRestServiceServer.
  */
-@SpringBootTest
+@RestClientTest(EntityClient.class)
+@ContextConfiguration(classes = {EntityClient.class, RestClientConfig.class, OAuth2ClientConfig.class, ObjectMapper.class})
 @DisplayName("Keycloak Unavailability Chaos Tests")
 @Slf4j
 class KeycloakChaosTest {
-
 
     @Autowired
     private MockRestServiceServer mockServer;
 
     @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
+
+    @MockitoBean
+    private OAuth2AuthorizedClient authorizedClient;
+
+    @MockitoBean
+    private OAuth2AccessToken accessToken;
 
     @Autowired
     private EntityClient entityClient;
@@ -320,8 +331,8 @@ class KeycloakChaosTest {
      * Helper method to mock OAuth2 token acquisition
      */
     private void mockOAuth2Token(String token) {
-        // Token is mocked via OAuth2AuthorizedClientManager bean
+        when(authorizedClientManager.authorize(any())).thenReturn(authorizedClient);
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(accessToken.getTokenValue()).thenReturn(token);
     }
 }
-
-

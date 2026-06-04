@@ -1,5 +1,7 @@
 package com.agilesolutions.service_a.integration;
 
+import com.agilesolutions.service_a.config.OAuth2ClientConfig;
+import com.agilesolutions.service_a.config.RestClientConfig;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,6 +26,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
@@ -33,7 +41,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * 
  * Uses RestTestClient with MockRestServiceServer for modern HTTP client testing.
  */
-@SpringBootTest
+@RestClientTest(EntityClient.class)
+@ContextConfiguration(classes = {EntityClient.class, RestClientConfig.class, OAuth2ClientConfig.class, ObjectMapper.class})
 @DisplayName("Service A → Service B Authorization Integration Tests")
 @Slf4j
 class ServiceToServiceAuthIntegrationTest {
@@ -46,6 +55,12 @@ class ServiceToServiceAuthIntegrationTest {
 
     @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
+
+    @MockitoBean
+    private OAuth2AuthorizedClient authorizedClient;
+
+    @MockitoBean
+    private OAuth2AccessToken accessToken;
 
     @Autowired
     private EntityClient entityClient;
@@ -224,8 +239,9 @@ class ServiceToServiceAuthIntegrationTest {
      * Helper method to mock OAuth2 token acquisition
      */
     private void mockOAuth2Token(String token) {
-        // Token is mocked via OAuth2AuthorizedClientManager bean
-        // Actual token injection happens in RestClient fluent API
+        when(authorizedClientManager.authorize(any())).thenReturn(authorizedClient);
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(accessToken.getTokenValue()).thenReturn(token);
     }
 }
 

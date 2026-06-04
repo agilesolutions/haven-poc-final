@@ -1,12 +1,18 @@
 package com.agilesolutions.service_a.unit;
 
+import com.agilesolutions.service_a.controller.InfoController;
+import com.agilesolutions.service_a.exception.GlobalExceptionHandler;
+import com.agilesolutions.service_a.service.InfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -22,15 +28,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests endpoints that verify service health status including
  * application health, database connectivity, and dependency status
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@WebMvcTest(excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                OAuth2ClientAutoConfiguration.class
+        })
+//@AutoConfigureMockMvc(addFilters = false) // Disable security filters to reach the endpoint
+@SpringJUnitConfig(classes = {GlobalExceptionHandler.class})
 @DisplayName("Service A Health Check Tests")
+@TestPropertySource(properties = {
+        "management.endpoints.web.exposure.include=health,info,metrics", // Expose for test
+        "management.endpoint.health.show-details=always"
+})
 @Slf4j
 class HealthCheckTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private InfoService infoService;
 
     @Test
     @DisplayName("Should respond to health check with 200 OK")

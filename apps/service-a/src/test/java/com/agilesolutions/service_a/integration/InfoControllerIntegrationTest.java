@@ -45,17 +45,8 @@ class InfoControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockitoBean
     private EntityClient entityClient;
-
-    @Autowired
-    private InfoService infoService;
-
-    @Autowired
-    private InfoController infoController;
 
     private UUID testId;
     private EntityInfo testEntityInfo;
