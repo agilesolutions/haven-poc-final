@@ -1,0 +1,223 @@
+stages:
+  - build
+  - test
+  - integration
+  - scan
+  - push
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  CI_REGISTRY_IMAGE: ${CI_REGISTRY}/${CI_PROJECT_PATH}
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS: "true"
+  DOCKER_CERT_PATH: ${DOCKER_TLS_CERTDIR}
+
+# Build Service A
+build:service-a:
+  stage: build
+  image: gradle:8.5-jdk25
+  script:
+    - cd apps/service-a
+    - gradle clean build -x test
+    - echo "Build successful"
+  artifacts:
+    paths:
+      - apps/service-a/build/libs/*.jar
+    expire_in: 1 day
+  only:
+    - branches
+
+# Build Service B
+build:service-b:
+  stage: build
+  image: gradle:8.5-jdk25
+  script:
+    - cd apps/service-b
+    - gradle clean build -x test
+    - echo "Build successful"
+  artifacts:
+    paths:
+      - apps/service-b/build/libs/*.jar
+    expire_in: 1 day
+  only:
+    - branches
+
+# Unit Tests - Service A
+test:service-a-unit:
+  stage: test
+  image: gradle:8.5-jdk25
+  script:
+    - cd apps/service-a
+    - gradle test --tests "*Unit*"
+  artifacts:
+    reports:
+      junit: apps/service-a/build/test-results/test/**/*.xml
+  only:
+    - branches
+
+# Unit Tests - Service B
+test:service-b-unit:
+  stage: test
+  image: gradle:8.5-jdk25
+  script:
+    - cd apps/service-b
+    - gradle test --tests "*Unit*"
+  artifacts:
+    reports:
+      junit: apps/service-b/build/test-results/test/**/*.xml
+  only:
+    - branches
+
+# Integration Tests - Service A
+test:service-a-integration:
+  stage: integration
+  image: gradle:8.5-jdk25
+  services:
+    - docker:24-dind
+  script:
+    - cd apps/service-a
+    - gradle test --tests "*Integration*"
+  artifacts:
+    reports:
+      junit: apps/service-a/build/test-results/test/**/*.xml
+  only:
+    - branches
+  allow_failure: true
+
+# Integration Tests - Service B
+test:service-b-integration:
+  stage: integration
+  image: gradle:8.5-jdk25
+  services:
+    - docker:24-dind
+    - postgres:15
+  script:
+    - cd apps/service-b
+    - gradle test --tests "*Integration*"
+  artifacts:
+    reports:
+      junit: apps/service-b/build/test-results/test/**/*.xml
+  only:
+    - branches
+  allow_failure: true
+
+# Dockerfile Lint - Service A
+scan:service-a-dockerfile:
+  stage: scan
+  image: hadolint/hadolint:latest-debian
+  script:
+    - hadolint apps/service-a/Dockerfile
+  allow_failure: true
+
+# Dockerfile Lint - Service B
+scan:service-b-dockerfile:
+  stage: scan
+  image: hadolint/hadolint:latest-debian
+  script:
+    - hadolint apps/service-b/Dockerfile
+  allow_failure: true
+
+# Docker Build & Push - Service A
+push:service-a:
+  stage: push
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t ${CI_REGISTRY_IMAGE}/service-a:${CI_COMMIT_SHA} apps/service-a/
+    - docker tag ${CI_REGISTRY_IMAGE}/service-a:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/service-a:latest
+    - docker push ${CI_REGISTRY_IMAGE}/service-a:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/service-a:latest
+  only:
+    - main
+    - develop
+
+# Docker Build & Push - Service B
+push:service-b:
+  stage: push
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t ${CI_REGISTRY_IMAGE}/service-b:${CI_COMMIT_SHA} apps/service-b/
+    - docker tag ${CI_REGISTRY_IMAGE}/service-b:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/service-b:latest
+    - docker push ${CI_REGISTRY_IMAGE}/service-b:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/service-b:latest
+  only:
+    - main
+    - develop
+
+# Helm Deployment - Service A (to develop environment)
+deploy:service-a-dev:
+  stage: deploy
+  image: alpine/helm:latest
+  script:
+    - helm repo add stable https://charts.helm.sh/stable
+    - helm repo update
+    - helm upgrade --install service-a ./apps/service-a/helm --namespace dev --create-namespace
+      --values ./apps/service-a/helm/values.yaml
+      --set image.tag=${CI_COMMIT_SHA}
+  only:
+    - develop
+  environment:
+    name: development
+    kubernetes:
+      namespace: dev
+
+# Helm Deployment - Service B (to develop environment)
+deploy:service-b-dev:
+  stage: deploy
+  image: alpine/helm:latest
+  script:
+    - helm repo add stable https://charts.helm.sh/stable
+    - helm repo update
+    - helm upgrade --install service-b ./apps/service-b/helm --namespace dev --create-namespace
+      --values ./apps/service-b/helm/values.yaml
+      --set image.tag=${CI_COMMIT_SHA}
+  only:
+    - develop
+  environment:
+    name: development
+    kubernetes:
+      namespace: dev
+
+# Helm Deployment - Service A (to production environment)
+deploy:service-a-prod:
+  stage: deploy
+  image: alpine/helm:latest
+  script:
+    - helm repo add stable https://charts.helm.sh/stable
+    - helm repo update
+    - helm upgrade --install service-a ./apps/service-a/helm --namespace prod --create-namespace
+      --values ./apps/service-a/helm/values.yaml
+      --set image.tag=${CI_COMMIT_SHA}
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    kubernetes:
+      namespace: prod
+
+# Helm Deployment - Service B (to production environment)
+deploy:service-b-prod:
+  stage: deploy
+  image: alpine/helm:latest
+  script:
+    - helm repo add stable https://charts.helm.sh/stable
+    - helm repo update
+    - helm upgrade --install service-b ./apps/service-b/helm --namespace prod --create-namespace
+      --values ./apps/service-b/helm/values.yaml
+      --set image.tag=${CI_COMMIT_SHA}
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    kubernetes:
+      namespace: prod
+

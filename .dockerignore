@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# Build artifacts
+build/
+target/
+*.jar
+*.class
+.gradle/
+gradle-wrapper.jar
+
+# IDE and editors
+.idea/
+.vscode/
+.settings/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Environment
+.env*
+.env.local
+
+# Logs
+*.log*
+logs/
+
+# Coverage
+coverage/
+.coverage
+
+# CI/CD
+.gitlab-ci.yml
+.github/
+
+# Kubernetes and Helm
+helm/
+k8s/
+.kube/
+
+# Terraform
+.terraform/
+*.tfstate*
+.terraform.lock.hcl
+
+# Documentation
+docs/
+README.md
+LICENSE
+

@@ -1,51 +1,78 @@
 spring:
   application:
     name: service-a
+    version: 1.0.0
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
   security:
     oauth2:
       client:
         registration:
           keycloak:
-            client-id: service-a
-            client-secret: cZ5Rb3UWpsb7Hm0BfnYmg5EWrJVDA2rc
+            client-id: ${OAUTH2_CLIENT_ID:service-a}
+            client-secret: ${OAUTH2_CLIENT_SECRET:}
             authorization-grant-type: client_credentials
+            scope: openid,profile,email
         provider:
           keycloak:
-            token-uri: http://keycloak/auth/realms/demo/protocol/openid-connect/token
+            token-uri: ${OAUTH2_TOKEN_URI:http://keycloak:8080/auth/realms/demo/protocol/openid-connect/token}
+            issuer-uri: ${OAUTH2_ISSUER_URI:http://keycloak:8080/auth/realms/demo}
 
-  otel:
-    exporter:
-      otlp:
-        endpoint: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/traces
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,info
+        include: health,info,metrics,prometheus,traces
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s,2s,5s
+    enable:
+      jvm: true
+      process: true
+      logback: true
   tracing:
     sampling:
-      probability: 1.0 # 100% sampling for development
-
+      probability: ${TRACING_SAMPLE_PROBABILITY:1.0}
   otlp:
-    metrics:
-      export:
-        url: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/metrics
-  opentelemetry:
     tracing:
-      export:
-        otlp:
-          endpoint: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/traces
-    logging:
-      export:
-        otlp:
-          endpoint: http://lgtm-loki-gateway.observability.svc.cluster.local:4318/v1/logs
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://lgtm-gateway:4317}
 
 logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.agilesolutions: ${APP_LOG_LEVEL:DEBUG}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:DEBUG}
   pattern:
-    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  config: classpath:logback-spring.xml
 
 service:
-  name: "Service B"
-  description: "Demo service"
-  version: "0.0.1"
+  b:
+    url: ${SERVICE_B_URL:http://service-b:8080}
+    timeout-ms: ${SERVICE_B_TIMEOUT_MS:5000}
+    max-retries: ${SERVICE_B_MAX_RETRIES:3}
+

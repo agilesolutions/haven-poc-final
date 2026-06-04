@@ -1,24 +1,122 @@
+replicaCount: 2
+
 image:
-  repository: agilesolutions/service-b
-  tag: 0.0.1
+  repository: service-b
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
 
 service:
+  type: ClusterIP
   port: 8080
+  targetPort: 8080
 
 ingress:
   enabled: true
   className: nginx
-  host: service-b.local
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: service-b.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: service-b-tls
+      hosts:
+        - service-b.example.com
 
-application:
-  featureToggle: true
-  name: "Service A"
-  description: "Demo service"
-  version: "0.0.1"
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: prod
+  - name: SPRING_APPLICATION_NAME
+    value: service-b
+  - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+    value: validate
+  - name: SPRING_FLYWAY_ENABLED
+    value: "true"
+
+envFrom: []
+# - configMapRef:
+#     name: app-config
+
+secrets: []
+# - name: DB_PASSWORD
+#   valueFrom:
+#     secretKeyRef:
+#       name: db-credentials
+#       key: password
 
 database:
-  host: pg-payments-prod.postgres.database.azure.com
+  host: postgresql
+  port: 5432
   name: info
+  username: postgres
+  # password should be supplied via secret
 
 oauth2:
-  issuerUri: http://keycloak-keycloakx-http.keycloak/auth/realms/demo
+  issuerUri: http://keycloak:8080/auth/realms/demo
+  clientId: service-b
+  # clientSecret should be supplied via secret
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsReadOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - service-b
+          topologyKey: kubernetes.io/hostname

@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: Service B Internal API
+  description: Internal API for Service B to provide entity information to Service A
+  version: 1.0.0
+servers:
+  - url: http://service-b:8080
+    description: Service B internal service
+paths:
+  /api/internal/info/{id}:
+    get:
+      summary: Retrieve entity information
+      description: Get entity details by ID from PostgreSQL database
+      operationId: getEntityInfoInternal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the entity
+      responses:
+        '200':
+          description: Entity information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entity'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Entity:
+      type: object
+      required:
+        - name
+        - description
+        - version
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          description: Entity name
+        description:
+          type: string
+          description: Entity description
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          description: Semantic version (MAJOR.MINOR.PATCH)
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

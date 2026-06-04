@@ -1,0 +1,18 @@
+apiVersion: v2
+name: service-a
+description: A Spring Boot microservice for entity information gateway
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - spring-boot
+  - microservice
+  - oidc
+
+maintainers:
+  - name: Agile Solutions
+    email: team@agilesolutions.com
+
+dependencies: []
+

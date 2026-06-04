@@ -1,41 +1,97 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "app.fullname" . }}
+  name: {{ include "service-b.fullname" . }}
+  labels:
+    {{- include "service-b.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "app.name" . }}
+      {{- include "service-b.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
       labels:
-        app: {{ include "app.name" . }}
+        {{- include "service-b.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "service-b.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: app
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          ports:
-            - containerPort: {{ .Values.service.port }}
-          env:
-            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
-              value: "file:/config/"
-            - name: DB_USERNAME
-              value: postgres
-            - name: DB_HOST
-              value: {{ .Values.database.host }}
-            - name: DB_NAME
-              value: {{ .Values.database.name }}
-          volumeMounts:
-            - name: config-volume
-              mountPath: /config
-            - name: db-secret-volume
-              mountPath: /etc/secrets/db
-              readOnly: true
-      volumes:
-        - name: config-volume
-          configMap:
-            name: {{ include "app.fullname" . }}-configmap
-        - name: db-secret-volume
-          secret:
-            secretName: {{ include "app.fullname" . }}-db-secret
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: LOG_LEVEL
+          value: "{{ .Values.logLevel }}"
+        - name: DB_HOST
+          value: "{{ .Values.database.host }}"
+        - name: DB_PORT
+          value: "{{ .Values.database.port }}"
+        - name: DB_NAME
+          value: "{{ .Values.database.name }}"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "service-b.fullname" . }}-db
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "service-b.fullname" . }}-db
+              key: password
+        - name: DB_POOL_SIZE
+          value: "{{ .Values.database.poolSize }}"
+        - name: DB_CONNECTION_TIMEOUT
+          value: "{{ .Values.database.connectionTimeout }}"
+        - name: OAUTH2_ISSUER_URI
+          value: "{{ .Values.keycloak.issuerUri }}"
+        - name: OAUTH2_JWK_SET_URI
+          value: "{{ .Values.keycloak.jwkSetUri }}"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "{{ .Values.observability.otlpEndpoint }}"
+        - name: TRACING_SAMPLE_PROBABILITY
+          value: "{{ .Values.observability.tracingSampleProbability }}"
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

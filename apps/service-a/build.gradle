@@ -28,15 +28,39 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
 	implementation 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+	
 	// Spring Boot 4 OpenTelemetry for distributed tracing and metrics
 	implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
 	implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha'
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
 	implementation 'org.springframework.boot:spring-boot-starter-aop:3.3.5'
+	
+	// Micrometer and Prometheus for metrics
+	implementation 'io.micrometer:micrometer-registry-prometheus:1.12.2'
+	
+	// OpenTelemetry exporters for LGTM (OTLP protocol)
+	implementation 'io.opentelemetry:opentelemetry-exporter-otlp:1.32.0'
+	implementation 'io.opentelemetry:opentelemetry-sdk-extension-jaeger-remote-sampler:1.32.0'
+	
+	// Loki exporter for logs
+	implementation 'io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha'
 
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 
-	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-restclient-test'
+	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+	testImplementation 'org.testcontainers:testcontainers:1.19.3'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+	testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Test dependencies (required to use Lombok in src/test/java)
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 String commit() {

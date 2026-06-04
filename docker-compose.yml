@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  # PostgreSQL database for development and testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: haven-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-haven_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - haven-network
+
+  # Keycloak for OIDC authentication
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.0
+    container_name: haven-keycloak
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB:-keycloak}
+      KC_DB_USERNAME: ${DB_USER:-postgres}
+      KC_DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8888
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+      KC_PROXY: edge
+    ports:
+      - "8888:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    command:
+      - start-dev
+      - --auto-build
+    networks:
+      - haven-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  keycloak_data:
+    driver: local
+
+networks:
+  haven-network:
+    driver: bridge
+

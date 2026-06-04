@@ -1,0 +1,143 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: service-a
+  namespace: default
+  labels:
+    release: prometheus
+    app: service-a
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: service-a
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_service_name]
+      targetLabel: service
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: service-b
+  namespace: default
+  labels:
+    release: prometheus
+    app: service-b
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: service-b
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - sourceLabels: [__meta_kubernetes_service_name]
+      targetLabel: service
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: haven-services
+  namespace: default
+  labels:
+    prometheus: kube-prometheus
+spec:
+  groups:
+  - name: haven.services
+    interval: 30s
+    rules:
+    # Service A alerts
+    - alert: ServiceAHighErrorRate
+      expr: |
+        (sum(rate(http_server_requests_seconds_count{job="service-a",status=~"5.."}[5m])) by (job)
+         /
+         sum(rate(http_server_requests_seconds_count{job="service-a"}[5m])) by (job))
+        > 0.05
+      for: 5m
+      annotations:
+        summary: "Service A has high error rate"
+        description: "Service A error rate is {{ $value | humanizePercentage }} over last 5 minutes"
+
+    - alert: ServiceAHighLatency
+      expr: |
+        histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job="service-a"}[5m])) by (le)) > 1
+      for: 5m
+      annotations:
+        summary: "Service A has high latency"
+        description: "Service A p99 latency is {{ $value }}s"
+
+    - alert: ServiceADown
+      expr: up{job="service-a"} == 0
+      for: 1m
+      annotations:
+        summary: "Service A is down"
+        description: "Service A has been unreachable for more than 1 minute"
+
+    # Service B alerts
+    - alert: ServiceBHighErrorRate
+      expr: |
+        (sum(rate(http_server_requests_seconds_count{job="service-b",status=~"5.."}[5m])) by (job)
+         /
+         sum(rate(http_server_requests_seconds_count{job="service-b"}[5m])) by (job))
+        > 0.05
+      for: 5m
+      annotations:
+        summary: "Service B has high error rate"
+        description: "Service B error rate is {{ $value | humanizePercentage }} over last 5 minutes"
+
+    - alert: ServiceBHighLatency
+      expr: |
+        histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job="service-b"}[5m])) by (le)) > 1
+      for: 5m
+      annotations:
+        summary: "Service B has high latency"
+        description: "Service B p99 latency is {{ $value }}s"
+
+    - alert: ServiceBDown
+      expr: up{job="service-b"} == 0
+      for: 1m
+      annotations:
+        summary: "Service B is down"
+        description: "Service B has been unreachable for more than 1 minute"
+
+    - alert: ServiceBDatabaseConnectionPoolExhaustion
+      expr: |
+        jdbc_connections_active{pool="HikariPool-1",job="service-b"}
+        /
+        jdbc_connections_max{pool="HikariPool-1",job="service-b"}
+        > 0.8
+      for: 2m
+      annotations:
+        summary: "Service B database connection pool near exhaustion"
+        description: "Service B has used {{ $value | humanizePercentage }} of connection pool"
+
+    # Cross-service alerts
+    - alert: HighErrorRateAcrossServices
+      expr: |
+        (sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (job)
+         /
+         sum(rate(http_server_requests_seconds_count{}[5m])) by (job))
+        > 0.10
+      for: 5m
+      annotations:
+        summary: "High error rate across Haven services"
+        description: "{{ $labels.job }} error rate is {{ $value | humanizePercentage }}"
+
+

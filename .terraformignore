@@ -1,0 +1,56 @@
+# Local Terraform directory
+.terraform/
+.terraform.lock.hcl
+
+# Local .tfvars files
+*.tfvars
+*.tfvars.json
+
+# Crash log files
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# State files
+*.tfstate
+*.tfstate.*
+
+# Backup files
+*.backup
+*.bak
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# OS
+Thumbs.db
+*.tmp
+
+# Documentation
+*.md
+LICENSE
+README.md
+
+# CI/CD configuration
+.gitlab-ci.yml
+.github/
+
+# Git
+.git
+.gitignore
+
+# Other
+.env*
+.env.local
+*.log*
+

@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: Service A API
+  description: External API for retrieving entity information via Service A gateway
+  version: 1.0.0
+servers:
+  - url: http://service-a:8080
+    description: Service A internal service
+paths:
+  /api/info/{id}:
+    get:
+      summary: Retrieve entity information
+      description: Get entity details by ID through Service A gateway to Service B
+      operationId: getEntityInfo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the entity
+      responses:
+        '200':
+          description: Entity information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entity'
+        '404':
+          description: Entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Entity:
+      type: object
+      required:
+        - name
+        - description
+        - version
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          description: Entity name
+        description:
+          type: string
+          description: Entity description
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          description: Semantic version (MAJOR.MINOR.PATCH)
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message
