@@ -7,8 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -70,7 +70,8 @@ class EntityServiceIntegrationTest {
                 .description("Entity for integration testing")
                 .version("1.0.0")
                 .createdBy("integration-test")
-                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .active(true)
                 .build();
 
         entityRepository.save(testEntity);
@@ -137,7 +138,7 @@ class EntityServiceIntegrationTest {
                 .name("New Entity")
                 .description("Newly created entity")
                 .version("1.0.0")
-                .isActive(true)
+                .active(true)
                 .build();
 
         // When
@@ -199,7 +200,7 @@ class EntityServiceIntegrationTest {
                 .id(UUID.randomUUID())
                 .name("Second Entity")
                 .version("1.0.0")
-                .isActive(true)
+                .active(true)
                 .build();
         entityRepository.save(entity2);
 

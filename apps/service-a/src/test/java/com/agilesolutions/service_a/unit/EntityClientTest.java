@@ -1,5 +1,7 @@
 package com.agilesolutions.service_a.service;
 
+import com.agilesolutions.service_a.config.OAuth2ClientConfig;
+import com.agilesolutions.service_a.config.RestClientConfig;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -8,10 +10,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
@@ -23,6 +27,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.ExpectedCount.times;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
@@ -39,7 +45,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * without needing actual HTTP servers.
  */
 @RestClientTest(EntityClient.class)
-@SpringBootTest
+@ContextConfiguration(classes = {EntityClient.class, RestClientConfig.class, OAuth2ClientConfig.class, ObjectMapper.class})
 @Slf4j
 @DisplayName("EntityClient Unit Tests with RestTestClient")
 class EntityClientTest {
@@ -53,6 +59,12 @@ class EntityClientTest {
     @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
 
+    @MockitoBean
+    private OAuth2AuthorizedClient authorizedClient;
+
+    @MockitoBean
+    private OAuth2AccessToken accessToken;
+
     @Autowired
     private EntityClient entityClient;
 
@@ -61,7 +73,7 @@ class EntityClientTest {
 
     private UUID testEntityId;
     private EntityInfo testEntity;
-    private static final String SERVICE_B_URL = "http://localhost:8081";
+    private static final String SERVICE_B_URL = "http://service-b:8080";
     private static final String TOKEN = "test-oauth2-token-123";
 
     @BeforeEach
@@ -347,9 +359,9 @@ class EntityClientTest {
      * @param token the token to return when acquiring OAuth2 credentials
      */
     private void mockOAuth2Token(String token) {
-        // In a real test, you would mock the OAuth2AuthorizedClientManager
-        // For RestTestClient, the token is typically included in the request headers
-        // This is a placeholder for the OAuth2 setup
+        when(authorizedClientManager.authorize(any())).thenReturn(authorizedClient);
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(accessToken.getTokenValue()).thenReturn(token);
     }
 }
 

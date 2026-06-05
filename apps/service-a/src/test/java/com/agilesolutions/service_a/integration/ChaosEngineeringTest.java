@@ -1,7 +1,10 @@
 package com.agilesolutions.service_a.integration;
 
+import com.agilesolutions.service_a.controller.InfoController;
+import com.agilesolutions.service_a.exception.GlobalExceptionHandler;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
+import com.agilesolutions.service_a.service.InfoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -11,9 +14,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.ResourceAccessException;
@@ -27,6 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.ExpectedCount.times;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -39,7 +49,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * experiencing intermittent failures, or returning errors.
  * Uses modern RestClient with MockRestServiceServer for HTTP mocking.
  */
-@SpringBootTest
+@WebMvcTest(InfoController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ContextConfiguration(classes = {InfoController.class, GlobalExceptionHandler.class, InfoService.class})
 @DisplayName("Service A Chaos Engineering Tests")
 @Slf4j
 class ChaosEngineeringTest {
@@ -50,6 +62,12 @@ class ChaosEngineeringTest {
 
     @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
+
+    @MockitoBean
+    private OAuth2AuthorizedClient authorizedClient;
+
+    @MockitoBean
+    private OAuth2AccessToken accessToken;
 
     @Autowired
     private EntityClient entityClient;
@@ -323,7 +341,9 @@ class ChaosEngineeringTest {
      * Helper method to mock OAuth2 token acquisition
      */
     private void mockOAuth2Token(String token) {
-        // Token is mocked via OAuth2AuthorizedClientManager bean
+        when(authorizedClientManager.authorize(any())).thenReturn(authorizedClient);
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(accessToken.getTokenValue()).thenReturn(token);
     }
 }
 

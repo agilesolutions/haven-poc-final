@@ -1,5 +1,7 @@
 package com.agilesolutions.service_a.unit;
 
+import com.agilesolutions.service_a.config.OAuth2ClientConfig;
+import com.agilesolutions.service_a.config.RestClientConfig;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,17 +42,23 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * Tests error handling for service unavailability, timeouts, and auth failures
  * using modern RestClient with MockRestServiceServer for HTTP mocking.
  */
-@SpringBootTest
+@RestClientTest(EntityClient.class)
+@ContextConfiguration(classes = {EntityClient.class, RestClientConfig.class, OAuth2ClientConfig.class, ObjectMapper.class})
 @DisplayName("Service A Error Handling Tests")
 @Slf4j
 class ErrorHandlingTest {
-
 
     @Autowired
     private MockRestServiceServer mockServer;
 
     @MockitoBean
     private OAuth2AuthorizedClientManager authorizedClientManager;
+
+    @MockitoBean
+    private OAuth2AuthorizedClient authorizedClient;
+
+    @MockitoBean
+    private OAuth2AccessToken accessToken;
 
     @Autowired
     private EntityClient entityClient;
@@ -222,6 +234,9 @@ class ErrorHandlingTest {
     private void mockOAuth2Token(String token) {
         // Token is mocked via OAuth2AuthorizedClientManager bean
         // Actual token injection happens in RestClient fluent API
+        when(authorizedClientManager.authorize(any())).thenReturn(authorizedClient);
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(accessToken.getTokenValue()).thenReturn(token);
     }
 }
 
