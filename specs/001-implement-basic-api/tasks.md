@@ -3,7 +3,7 @@
 **Feature**: Implement basic services with OIDC-protected service-to-service communication  
 **Branch**: `001-implement-basic-services`  
 **Created**: May 6, 2026  
-**Total Tasks**: 61 | **Setup**: 8 | **Foundational**: 11 | **US1**: 9 | **US2**: 9 | **US3**: 10 | **US4**: 8 | **Polish**: 6
+**Total Tasks**: 71 | **Setup**: 8 | **Foundational**: 11 | **US1**: 9 | **US2**: 9 | **US3**: 10 | **US4**: 8 | **US5**: 10 | **Polish**: 6
 
 ---
 
@@ -43,7 +43,9 @@ Phase 5 (US3) ← [Depends on Phases 3-4 for Service B structure]
     ↓
 Phase 6 (US4) ← [Depends on Phases 3-5 for error scenarios]
     ↓
-Phase 7 (Polish)
+Phase 7 (US5) ← [Depends on Phases 3-6 for market data integration]
+    ↓
+Phase 8 (Polish)
 ```
 
 ---
@@ -257,6 +259,31 @@ Phase 7 (Polish)
 
 ---
 
+## Phase 8: Market Data: TwelveData latest price (P2)
+
+**Story Goal**: Service B provides a new internal endpoint that returns the latest market price for a specified financial instrument by calling the TwelveData real-time price API.
+
+**Independent Test Criteria**:
+- Service B exposes GET `/api/internal/market/price/{symbol}` and returns HTTP 200 with latest price JSON
+- TwelveData API key is read from environment variables and not hardcoded
+- Client calls to TwelveData use RestClient with appropriate timeouts and error handling
+- Unit tests mock external HTTP calls; integration test verifies end-to-end behavior (app + mocked TwelveData)
+
+### Service B - Market Data Integration
+
+- [ ] T067 Create `MarketPrice` model in `apps/service-b/src/main/java/com/agilesolutions/service_b/model/MarketPrice.java` (fields: symbol, price, timestamp)
+- [ ] T068 Add TwelveData configuration properties in `apps/service-b/src/main/java/com/agilesolutions/service_b/config/TwelveDataConfig.java` and document env vars in `apps/service-b/src/main/resources/application.yaml` (TWELVEDATA_API_KEY, TWELVEDATA_BASE_URL)
+- [ ] T069 Implement `TwelveDataClient` using RestClient in `apps/service-b/src/main/java/com/agilesolutions/service_b/client/TwelveDataClient.java` to call `GET /price?symbol={symbol}&apikey={key}` and map response to `MarketPrice`
+- [ ] T070 Implement `MarketDataService` in `apps/service-b/src/main/java/com/agilesolutions/service_b/service/MarketDataService.java` that uses `TwelveDataClient` and exposes method `getLatestPrice(String symbol)`
+- [ ] T071 Create `MarketController` in `apps/service-b/src/main/java/com/agilesolutions/service_b/controller/MarketController.java` with GET `/api/internal/market/price/{symbol}` returning `MarketPrice`
+- [ ] T072 [P] Create unit tests for `TwelveDataClient` in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/TwelveDataClientTest.java` mocking external HTTP responses
+- [ ] T073 [P] Create unit tests for `MarketDataService` in `apps/service-b/src/test/java/com/agilesolutions/service_b/unit/MarketDataServiceTest.java` (mock `TwelveDataClient`)
+- [ ] T074 Create integration test `MarketControllerIntegrationTest` in `apps/service-b/src/test/java/com/agilesolutions/service_b/integration/MarketControllerIntegrationTest.java` using RestTestClient or MockWebServer to simulate TwelveData responses
+- [ ] T075 [P] Add contract `specs/001-implement-basic-api/contracts/service-b-market-api.yaml` describing the new endpoint and response schema
+- [ ] T076 [P] Update `specs/001-implement-basic-api/quickstart.md` with instructions for setting `TWELVEDATA_API_KEY` and example curl for `/api/internal/market/price/{symbol}`
+
+---
+
 ## Testing Summary by User Story
 
 | User Story | Unit Tests | Integration Tests | Test Containers |
@@ -265,6 +292,7 @@ Phase 7 (Polish)
 | **US2** | 2 | 2 | Keycloak + App |
 | **US3** | 2 | 3 | PostgreSQL + App |
 | **US4** | 2 | 3 | All + Chaos |
+| **US5** | 2 | 3 | All + Mocked |
 | **Total** | 9 | 10 | Multiple |
 
 ---
@@ -284,9 +312,9 @@ Phase 7 (Polish)
 
 ## Validation Checklist
 
-**Format Validation**: ✅ All 66 tasks follow strict checklist format
+**Format Validation**: ✅ All 71 tasks follow strict checklist format
 - ✅ All tasks have checkbox (`- [ ]`)
-- ✅ All tasks have Task ID (T001-T066)
+- ✅ All tasks have Task ID (T001-T076)
 - ✅ Parallelizable tasks marked with [P]
 - ✅ User story phase tasks marked with [Story]
 - ✅ All tasks include file path
@@ -298,19 +326,14 @@ Phase 7 (Polish)
 - ✅ All requirements from spec.md are mapped to tasks
 - ✅ All components from data-model.md are implemented
 
-**Quality Validation**:
-- ✅ Tasks are immediately executable by LLM agents
-- ✅ Dependencies are clear (Phase 1 → Phase 2 → Phase 3-6 → Phase 7)
-- ✅ Parallel opportunities identified and marked
-- ✅ MVP scope clearly defined (US1 only)
 
 ---
 
 ## How to Use This Task List
 
 1. **For MVP delivery**: Execute Phases 1-3 only (26 tasks, ~2-3 weeks)
-2. **For full implementation**: Execute all phases (66 tasks, ~6-8 weeks)
+2. **For full implementation**: Execute all phases (71 tasks, ~6-8 weeks)
 3. **For parallel execution**: All tasks marked [P] can run concurrently within the same phase
 4. **For testing**: Run unit tests during development, integration tests at phase completion
 
-
+---
