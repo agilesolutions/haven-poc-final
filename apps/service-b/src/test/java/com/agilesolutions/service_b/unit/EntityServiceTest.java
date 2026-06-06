@@ -17,8 +17,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -48,7 +50,7 @@ class EntityServiceTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .createdBy("test-user")
-                .isActive(true)
+                .active(true)
                 .build();
     }
 
@@ -85,7 +87,7 @@ class EntityServiceTest {
     @DisplayName("Should find active entity by ID successfully")
     void testFindActiveById_Success() {
         // Given
-        when(entityRepository.findByIdAndIsActive(testId, true))
+        when(entityRepository.findByIdAndActive(testId, true))
                 .thenReturn(Optional.of(testEntity));
 
         // When
@@ -94,8 +96,8 @@ class EntityServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(testId);
-        assertThat(result.getIsActive()).isTrue();
-        verify(entityRepository, times(1)).findByIdAndIsActive(testId, true);
+        assertThat(result.getActive()).isTrue();
+        verify(entityRepository, times(1)).findByIdAndActive(testId, true);
     }
 
     @Test
@@ -133,7 +135,7 @@ class EntityServiceTest {
                 .id(UUID.randomUUID())
                 .name("Entity 2")
                 .version("1.0.0")
-                .isActive(true)
+                .active(true)
                 .build();
         List<Entity> entities = List.of(testEntity, entity2);
         when(entityRepository.findAllActive()).thenReturn(entities);
@@ -164,7 +166,7 @@ class EntityServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(testId);
-        assertThat(result.getIsActive()).isTrue();
+        assertThat(result.getActive()).isTrue();
         verify(entityRepository, times(1)).save(any(Entity.class));
     }
 
@@ -179,7 +181,7 @@ class EntityServiceTest {
                 .id(testId)
                 .name("Entity Without Version")
                 .version("1.0.0")
-                .isActive(true)
+                .active(true)
                 .build();
         when(entityRepository.save(any(Entity.class))).thenReturn(savedEntity);
 

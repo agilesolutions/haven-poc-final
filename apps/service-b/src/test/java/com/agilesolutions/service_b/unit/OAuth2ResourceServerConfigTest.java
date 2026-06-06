@@ -1,20 +1,26 @@
 package com.agilesolutions.service_b.unit;
 
 import com.agilesolutions.service_b.config.OAuth2ResourceServerConfig;
+import com.agilesolutions.service_b.model.Entity;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,11 +36,21 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("OAuth2 Resource Server Configuration Tests")
 class OAuth2ResourceServerConfigTest {
 
+    MockHttpServletRequest request = new MockHttpServletRequest();
+
     @Autowired(required = false)
     private CorsConfigurationSource corsConfigurationSource;
 
     @Autowired(required = false)
     private OAuth2ResourceServerConfig oauth2ResourceServerConfig;
+
+    @BeforeEach
+    void setUp() {
+// Set up a mock request for CORS configuration tests}
+        request.setMethod("GET");
+        request.setRequestURI("/api/internal/info/1");
+    }
+
 
     @Test
     @DisplayName("CORS configuration source should be initialized")
@@ -46,7 +62,7 @@ class OAuth2ResourceServerConfigTest {
     @DisplayName("CORS should allow requests from Service A")
     void testCorsAllowsServiceAOrigins() {
         assertNotNull(corsConfigurationSource);
-        var corsConfig = corsConfigurationSource.getCorsConfiguration("/api/internal/info/1");
+        var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
         assertNotNull(corsConfig);
         
         assertTrue(corsConfig.getAllowedOrigins().contains("http://service-a:8080"),
@@ -59,7 +75,7 @@ class OAuth2ResourceServerConfigTest {
     @DisplayName("CORS should allow standard HTTP methods")
     void testCorsAllowsStandardMethods() {
         assertNotNull(corsConfigurationSource);
-        var corsConfig = corsConfigurationSource.getCorsConfiguration("/api/internal/info/1");
+        var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
         assertNotNull(corsConfig);
         
         assertTrue(corsConfig.getAllowedMethods().contains("GET"));
@@ -73,7 +89,7 @@ class OAuth2ResourceServerConfigTest {
     @DisplayName("CORS should allow Authorization header")
     void testCorsAllowsAuthorizationHeader() {
         assertNotNull(corsConfigurationSource);
-        var corsConfig = corsConfigurationSource.getCorsConfiguration("/api/internal/info/1");
+        var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
         assertNotNull(corsConfig);
         
         assertTrue(corsConfig.getAllowedHeaders().contains("Authorization"),
@@ -86,7 +102,7 @@ class OAuth2ResourceServerConfigTest {
     @DisplayName("CORS should expose trace headers")
     void testCorsExposesTraceHeaders() {
         assertNotNull(corsConfigurationSource);
-        var corsConfig = corsConfigurationSource.getCorsConfiguration("/api/internal/info/1");
+        var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
         assertNotNull(corsConfig);
         
         assertTrue(corsConfig.getExposedHeaders().contains("X-Trace-Id"),
@@ -97,7 +113,7 @@ class OAuth2ResourceServerConfigTest {
     @DisplayName("CORS should allow credentials")
     void testCorsAllowsCredentials() {
         assertNotNull(corsConfigurationSource);
-        var corsConfig = corsConfigurationSource.getCorsConfiguration("/api/internal/info/1");
+        var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
         assertNotNull(corsConfig);
         
         assertTrue(corsConfig.getAllowCredentials(),
@@ -108,7 +124,7 @@ class OAuth2ResourceServerConfigTest {
     @DisplayName("CORS max age should be set to 1 hour")
     void testCorsMaxAge() {
         assertNotNull(corsConfigurationSource);
-        var corsConfig = corsConfigurationSource.getCorsConfiguration("/api/internal/info/1");
+        var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
         assertNotNull(corsConfig);
         
         assertEquals(3600L, corsConfig.getMaxAge(),
@@ -208,6 +224,9 @@ class OAuth2ResourceServerConfigTest {
     @Test
     @DisplayName("Multiple CORS configurations should be registered")
     void testMultipleCorsPathPatterns() {
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+
         assertNotNull(corsConfigurationSource);
         
         // Test multiple paths
@@ -219,7 +238,8 @@ class OAuth2ResourceServerConfigTest {
         };
         
         for (String path : testPaths) {
-            var corsConfig = corsConfigurationSource.getCorsConfiguration(path);
+            request.setRequestURI(path);
+            var corsConfig = corsConfigurationSource.getCorsConfiguration(request);
             assertNotNull(corsConfig, "CORS config should exist for path: " + path);
         }
     }

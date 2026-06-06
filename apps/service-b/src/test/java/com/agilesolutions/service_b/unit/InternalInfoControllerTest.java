@@ -7,33 +7,38 @@ import com.agilesolutions.service_b.service.EntityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
  * Unit tests for InternalInfoController
  */
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(InternalInfoController.class)
 @DisplayName("InternalInfoController Unit Tests")
 class InternalInfoControllerTest {
 
-    @Mock
+    @MockitoBean
     private EntityService entityService;
 
-    @InjectMocks
-    private InternalInfoController controller;
+    @Autowired
+    private MockMvc mockMvc;
 
     private Entity testEntity;
     private UUID testId;
@@ -48,105 +53,94 @@ class InternalInfoControllerTest {
                 .version("1.0.0")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .isActive(true)
+                .active(true)
                 .build();
     }
 
     @Test
     @DisplayName("Should return EntityInfo when entity is found by ID")
-    void testGetInternalInfo_Success() {
+    void testGetInternalInfo_Success() throws Exception {
         // Given
         when(entityService.findActiveById(testId)).thenReturn(testEntity);
 
         // When
-        ResponseEntity<EntityInfo> response = controller.getInternalInfo(testId.toString());
+        mockMvc.perform(get("/internal/info/{id}", testId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testId.toString()))
+                .andExpect(jsonPath("$.name").value("Test Entity"))
+                .andExpect(jsonPath("$.description").value("A test entity"))
+                .andExpect(jsonPath("$.version").value("1.0.0"));
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getId()).isEqualTo(testId.toString());
-        assertThat(response.getBody().getName()).isEqualTo("Test Entity");
-        assertThat(response.getBody().getDescription()).isEqualTo("A test entity");
-        assertThat(response.getBody().getVersion()).isEqualTo("1.0.0");
-        verify(entityService, times(1)).findActiveById(testId);
+
     }
 
     @Test
     @DisplayName("Should return 404 when entity not found by ID")
-    void testGetInternalInfo_NotFound() {
+    void testGetInternalInfo_NotFound() throws Exception {
         // Given
         when(entityService.findActiveById(any(UUID.class)))
                 .thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Entity not found"));
 
         // When & Then
-        assertThatThrownBy(() -> controller.getInternalInfo(testId.toString()))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Entity not found");
-        verify(entityService, times(1)).findActiveById(testId);
+        mockMvc.perform(get("/internal/info/{id}", UUID.randomUUID().toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Entity not found"));
     }
 
     @Test
     @DisplayName("Should return 400 when UUID format is invalid")
-    void testGetInternalInfo_InvalidUUID() {
+    void testGetInternalInfo_InvalidUUID() throws Exception {
         // Given
         String invalidId = "invalid-uuid";
 
-        // When
-        ResponseEntity<EntityInfo> response = controller.getInternalInfo(invalidId);
+        // When & Then
+        mockMvc.perform(get("/internal/info/{id}", invalidId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid UUID format: " + invalidId));
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNull();
     }
 
     @Test
     @DisplayName("Should return EntityInfo when entity is found by name")
-    void testGetInternalInfoByName_Success() {
+    void testGetInternalInfoByName_Success() throws Exception {
         // Given
         when(entityService.findByName("Test Entity")).thenReturn(testEntity);
 
-        // When
-        ResponseEntity<EntityInfo> response = controller.getInternalInfoByName("Test Entity");
-
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getName()).isEqualTo("Test Entity");
-        verify(entityService, times(1)).findByName("Test Entity");
+        // When & Then
+        mockMvc.perform(get("/internal/info/name/{name}", "Test Entity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testId.toString()))
+                .andExpect(jsonPath("$.name").value("Test Entity"))
+                .andExpect(jsonPath("$.description").value("A test entity"))
+                .andExpect(jsonPath("$.version").value("1.0.0"));
     }
 
     @Test
     @DisplayName("Should return 404 when entity not found by name")
-    void testGetInternalInfoByName_NotFound() {
+    void testGetInternalInfoByName_NotFound() throws Exception {
         // Given
         when(entityService.findByName(anyString()))
                 .thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Entity not found"));
 
         // When & Then
-        assertThatThrownBy(() -> controller.getInternalInfoByName("NonExistent"))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Entity not found");
+        mockMvc.perform(get("/internal/info/name/{name}", "Nonexistent Entity"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Entity not found"));
     }
 
     @Test
     @DisplayName("Should map entity properties correctly to EntityInfo")
-    void testEntityToEntityInfoMapping() {
+    void testEntityToEntityInfoMapping() throws Exception {
         // Given
         when(entityService.findActiveById(testId)).thenReturn(testEntity);
 
-        // When
-        ResponseEntity<EntityInfo> response = controller.getInternalInfo(testId.toString());
-
-        // Then
-        assertThat(response.getBody())
-                .isNotNull()
-                .extracting("id", "name", "description", "version")
-                .containsExactly(
-                        testId.toString(),
-                        "Test Entity",
-                        "A test entity",
-                        "1.0.0"
-                );
+        // When & Then
+        mockMvc.perform(get("/internal/info/{id}", testId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testId.toString()))
+                .andExpect(jsonPath("$.name").value("Test Entity"))
+                .andExpect(jsonPath("$.description").value("A test entity"))
+                .andExpect(jsonPath("$.version").value("1.0.0"));
     }
 }
 

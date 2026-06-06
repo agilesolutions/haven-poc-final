@@ -57,6 +57,10 @@ dependencies {
 	testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
 	testImplementation 'org.testcontainers:postgresql:1.19.3'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Test dependencies (required to use Lombok in src/test/java)
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 String commit() {

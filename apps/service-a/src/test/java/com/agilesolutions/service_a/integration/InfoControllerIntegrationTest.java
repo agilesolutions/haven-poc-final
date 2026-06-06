@@ -5,7 +5,6 @@ import com.agilesolutions.service_a.exception.GlobalExceptionHandler;
 import com.agilesolutions.service_a.model.EntityInfo;
 import com.agilesolutions.service_a.service.EntityClient;
 import com.agilesolutions.service_a.service.InfoService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
